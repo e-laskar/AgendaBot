@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agenda}
+      POSTGRES_USER: ${POSTGRES_USER:-agenda}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD doit être défini dans .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Port non exposé sur l'hôte : la base n'est joignable que par le bot.
+    # Décommenter pour s'y connecter depuis l'hôte (psql, DBeaver…) :
+    # ports:
+    #   - "5432:5432"
+
+  agendabot:
+    build: .
+    image: agendabot
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # Discord__Token, Discord__TimeZone, etc. (voir .env.example)
+    env_file: .env
+    environment:
+      # Prioritaires sur env_file : le bot utilise toujours la base du service "db"
+      DOTNET_ENVIRONMENT: Production
+      Database__Provider: Postgres
+      ConnectionStrings__Agenda: Host=db;Port=5432;Database=${POSTGRES_DB:-agenda};Username=${POSTGRES_USER:-agenda};Password=${POSTGRES_PASSWORD}
+
+volumes:
+  pg-data:

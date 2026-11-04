@@ -1,0 +1,13 @@
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+appsettings.*.local.json
+.env
+
+# IDE
+.idea/
+.vs/
+*.user
+*.DotSettings.user
