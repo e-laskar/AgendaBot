@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AgendaBot.Host/AgendaBot.Host.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AgendaBot.UnitTests/AgendaBot.UnitTests.csproj" />
+  </Folder>
+</Solution>

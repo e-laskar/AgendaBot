@@ -19,11 +19,19 @@ Un rappel est posté dans le salon d'origine `ReminderMinutesBefore` minutes ava
 2. Inviter le bot avec les scopes `bot` + `applications.commands`.
 3. Renseigner le token (hors du dépôt) :
    ```bash
-   dotnet user-secrets set "Discord:Token" "<TOKEN>"
+   dotnet user-secrets set "Discord:Token" "<TOKEN>" --project src/AgendaBot.Host
    ```
    ou via la variable d'environnement `Discord__Token` (voir « Configuration » ci-dessous).
 4. (Dev) Renseigner `Discord:DevGuildId` avec l'ID de votre serveur de test pour un enregistrement instantané des commandes.
-5. `DOTNET_ENVIRONMENT=Development dotnet run`
+5. `DOTNET_ENVIRONMENT=Development dotnet run --project src/AgendaBot.Host`
+
+## Tests
+
+```bash
+dotnet test
+```
+
+Tests unitaires : xUnit v3 + [Shouldly](https://docs.shouldly.org/) pour les assertions.
 
 ## Configuration
 
@@ -48,7 +56,8 @@ Pour le dev local, copier `.env.example` en `.env` (ignoré par git) et le rempl
 cp .env.example .env
 ```
 
-Le fichier est lu au démarrage depuis le répertoire courant (ou à côté de l'exécutable).
+Le fichier est lu au démarrage depuis le répertoire courant ou l'un de ses parents (la racine du dépôt
+convient donc aussi quand l'IDE lance depuis `src/AgendaBot.Host`), à défaut à côté de l'exécutable.
 Les variables déjà définies dans l'environnement ne sont pas écrasées, et les valeurs vides sont ignorées
 (un `Discord__Token=` vide ne masque donc pas le token des user-secrets).
 
@@ -97,13 +106,17 @@ docker run -d --name agendabot --restart unless-stopped \
 ## Structure
 
 ```
-Program.cs                  Host, DI, création de la base SQLite
-Configuration/BotOptions.cs Options (token, fuseau horaire, rappels)
-Configuration/DotEnv.cs     Chargement du fichier .env
-Models/AgendaEvent.cs       Entité événement
-Data/AgendaDbContext.cs     DbContext EF Core (SQLite)
-Services/AgendaService.cs   Accès aux données de l'agenda
-Services/DiscordBotService  Connexion Discord + routage des slash commands
-Services/ReminderService    Tâche de fond qui envoie les rappels
-Modules/AgendaModule.cs     Slash commands /agenda
+AgendaBot.slnx
+Directory.Build.props         Propriétés communes (net10.0, nullable, warnings = erreurs)
+Directory.Packages.props      Versions des packages NuGet (gestion centralisée)
+src/AgendaBot.Host/
+  Program.cs                  Host, DI, création de la base
+  Configuration/              Options (token, fuseau horaire, rappels) et chargement du .env
+  Models/AgendaEvent.cs       Entité événement
+  Data/AgendaDbContext.cs     DbContext EF Core
+  Services/                   Accès aux données, connexion Discord, rappels
+  Modules/AgendaModule.cs     Slash commands /agenda
+tests/AgendaBot.UnitTests/    Tests unitaires (xUnit v3 + Shouldly)
 ```
+
+Migration en cours vers une architecture hexagonale (Domain / Application / adaptateurs).

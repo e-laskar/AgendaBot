@@ -9,18 +9,18 @@ public static class DotEnv
 {
     /// <summary>
     /// Charge le premier fichier trouvé parmi <paramref name="path"/> (si fourni),
-    /// <c>./.env</c> puis <c>.env</c> à côté de l'exécutable. Ne fait rien si aucun n'existe.
+    /// <c>.env</c> dans le répertoire courant ou l'un de ses parents (ex. racine du dépôt
+    /// quand l'IDE lance depuis <c>src/AgendaBot.Host</c>), puis <c>.env</c> à côté de l'exécutable.
+    /// Ne fait rien si aucun n'existe.
     /// </summary>
     /// <returns>Le chemin du fichier chargé, ou <c>null</c>.</returns>
     public static string? Load(string? path = null)
     {
-        var candidates = path is not null
-            ? new[] { path }
-            : new[]
-            {
-                Path.Combine(Directory.GetCurrentDirectory(), ".env"),
-                Path.Combine(AppContext.BaseDirectory, ".env")
-            };
+        IEnumerable<string> candidates = path is not null
+            ? [path]
+            : SelfAndParents(Directory.GetCurrentDirectory())
+                .Select(dir => Path.Combine(dir, ".env"))
+                .Append(Path.Combine(AppContext.BaseDirectory, ".env"));
 
         var file = candidates.FirstOrDefault(File.Exists);
         if (file is null)
@@ -34,6 +34,12 @@ public static class DotEnv
         }
 
         return file;
+    }
+
+    private static IEnumerable<string> SelfAndParents(string directory)
+    {
+        for (var dir = new DirectoryInfo(directory); dir is not null; dir = dir.Parent)
+            yield return dir.FullName;
     }
 
     internal static IEnumerable<(string Key, string Value)> Parse(IEnumerable<string> lines)

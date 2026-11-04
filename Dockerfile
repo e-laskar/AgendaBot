@@ -4,12 +4,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Restauration des paquets dans une couche séparée (mise en cache tant que le .csproj ne change pas)
-COPY global.json AgendaBot.csproj ./
-RUN dotnet restore
+# Restauration des paquets dans une couche séparée (mise en cache tant que les .csproj/.props ne changent pas)
+COPY global.json Directory.Build.props Directory.Packages.props ./
+COPY src/AgendaBot.Host/AgendaBot.Host.csproj src/AgendaBot.Host/
+RUN dotnet restore src/AgendaBot.Host/AgendaBot.Host.csproj
 
-COPY . .
-RUN dotnet publish -c Release -o /app --no-restore
+COPY src/ src/
+RUN dotnet publish src/AgendaBot.Host/AgendaBot.Host.csproj -c Release -o /app --no-restore
 
 # --- Runtime ---
 FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
@@ -24,5 +25,5 @@ ENV DOTNET_ENVIRONMENT=Production \
 
 COPY --from=build /app .
 
-USER appa
-ENTRYPOINT ["dotnet", "AgendaBot.dll"]
+USER app
+ENTRYPOINT ["dotnet", "AgendaBot.Host.dll"]
