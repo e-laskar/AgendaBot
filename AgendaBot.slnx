@@ -7,6 +7,7 @@
     <Project Path="src/AgendaBot.Persistence/AgendaBot.Persistence.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/AgendaBot.ArchitectureTests/AgendaBot.ArchitectureTests.csproj" />
     <Project Path="tests/AgendaBot.ComponentTests/AgendaBot.ComponentTests.csproj" />
     <Project Path="tests/AgendaBot.Testing/AgendaBot.Testing.csproj" />
     <Project Path="tests/AgendaBot.UnitTests/AgendaBot.UnitTests.csproj" />

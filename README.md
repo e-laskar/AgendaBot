@@ -30,11 +30,15 @@ Un rappel est posté dans le salon d'origine `ReminderMinutesBefore` minutes ava
 | Projet | Contenu | Prérequis |
 |---|---|---|
 | `tests/AgendaBot.UnitTests` | Domaine, cas d'usage, contrat du repository sur le fake en mémoire | aucun |
+| `tests/AgendaBot.ArchitectureTests` | Sens des dépendances entre projets, classes du cœur scellées | aucun |
 | `tests/AgendaBot.ComponentTests` — `Discord/` | Lecture des dates (fuseau, heure d'été), embeds et messages | aucun |
 | `tests/AgendaBot.ComponentTests` — `Persistence/` | Contrat du repository sur PostgreSQL réel (Testcontainers) | Docker démarré |
 
 ```bash
 dotnet test --project tests/AgendaBot.UnitTests
+```
+```bash
+dotnet test --project tests/AgendaBot.ArchitectureTests
 ```
 ```bash
 dotnet test --project tests/AgendaBot.ComponentTests
@@ -124,7 +128,14 @@ Le test `MigrationsTests` échoue tant que la migration n'a pas été générée
 
 ## Structure
 
-Architecture hexagonale : les dépendances pointent vers le domaine.
+Architecture hexagonale : les dépendances pointent vers le domaine. Les règles sont vérifiées par
+`tests/AgendaBot.ArchitectureTests` :
+
+- `Domain` ne dépend de rien ; `Application` ne dépend que de `Domain` ;
+- les adaptateurs `Persistence` et `Discord` ne se connaissent pas ;
+- EF Core / Npgsql ne sont utilisés que par `Persistence`, Discord.Net que par `Discord` ;
+- seul `Host` assemble le tout, et rien ne dépend de lui ;
+- les classes concrètes de `Domain` et `Application` sont `sealed`.
 
 ```
 AgendaBot.slnx
@@ -147,5 +158,6 @@ src/
 tests/
   AgendaBot.Testing/             Builder, fakes et contrat du repository (partagés)
   AgendaBot.UnitTests/           Tests unitaires (xUnit v3 + Shouldly)
+  AgendaBot.ArchitectureTests/   Règles de dépendances entre projets
   AgendaBot.ComponentTests/      Adaptateurs : Discord (sans infra), PostgreSQL (Testcontainers)
 ```

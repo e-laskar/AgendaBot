@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Shouldly" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AgendaBot.Domain\AgendaBot.Domain.csproj" />
+    <ProjectReference Include="..\..\src\AgendaBot.Application\AgendaBot.Application.csproj" />
+    <ProjectReference Include="..\..\src\AgendaBot.Persistence\AgendaBot.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\AgendaBot.Discord\AgendaBot.Discord.csproj" />
+    <ProjectReference Include="..\..\src\AgendaBot.Host\AgendaBot.Host.csproj" />
+  </ItemGroup>
+
+</Project>
