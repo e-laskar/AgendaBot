@@ -10,3 +10,4 @@ appsettings.*.local.json
 *.DotSettings.user
 
 TestResults/
+.artifacts/

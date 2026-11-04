@@ -10,3 +10,4 @@ obj/
 appsettings.*.local.json
 Dockerfile
 compose.yaml
+.artifacts/

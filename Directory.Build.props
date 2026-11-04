@@ -10,4 +10,10 @@
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(MSBuildThisFileDirectory).artifacts/windows</ArtifactsPath>
+    <ArtifactsPath Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(MSBuildThisFileDirectory).artifacts/linux</ArtifactsPath>
+  </PropertyGroup>
+
 </Project>
