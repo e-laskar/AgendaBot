@@ -1,4 +1,5 @@
 using AgendaBot.Application.Ports;
+using AgendaBot.Discord.Commands;
 using AgendaBot.Discord.Reminders;
 using Discord;
 using Discord.Interactions;
@@ -22,6 +23,8 @@ public static class DiscordSetup
         services.AddSingleton(sp => new InteractionService(
             sp.GetRequiredService<DiscordSocketClient>(),
             new InteractionServiceConfig { LogLevel = LogSeverity.Info }));
+        services.AddSingleton(sp => new UserDateParser(
+            TimeZoneInfo.FindSystemTimeZoneById(sp.GetRequiredService<IOptions<BotOptions>>().Value.TimeZone)));
         services.AddSingleton<IReminderNotifier, DiscordReminderNotifier>();
         services.AddHostedService<DiscordBotService>();
         services.AddHostedService<ReminderWorker>();

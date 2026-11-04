@@ -1,10 +1,8 @@
-using System.Globalization;
 using AgendaBot.Application.UseCases;
 using AgendaBot.Discord.Presentation;
 using AgendaBot.Domain;
 using Discord;
 using Discord.Interactions;
-using Microsoft.Extensions.Options;
 
 namespace AgendaBot.Discord.Commands;
 
@@ -15,13 +13,8 @@ public sealed class AgendaModule(
     ListUpcomingEvents listUpcomingEvents,
     GetEvent getEvent,
     DeleteEvent deleteEvent,
-    IOptions<BotOptions> options) : InteractionModuleBase<SocketInteractionContext>
+    UserDateParser userDateParser) : InteractionModuleBase<SocketInteractionContext>
 {
-    private const string UserDateFormat = "dd/MM/yyyy HH:mm";
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
-
-    private readonly TimeZoneInfo _userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(options.Value.TimeZone);
-
     private GuildId CurrentGuild => new(Context.Guild.Id);
 
     [SlashCommand("ajouter", "Ajoute un événement à l'agenda")]
@@ -31,9 +24,9 @@ public sealed class AgendaModule(
         [Summary("description", "Description optionnelle"), MaxLength(EventDescription.MaxLength)] string? description = null,
         [Summary("duree", "Durée en minutes"), MinValue(1)] int? durationMinutes = null)
     {
-        if (!TryParseUserDate(date, out var startsAt))
+        if (!userDateParser.TryParse(date, out var startsAt))
         {
-            await RespondWithErrorAsync($"Date invalide. Format attendu : `{UserDateFormat}` (ex. `24/12/2026 20:00`).");
+            await RespondWithErrorAsync($"Date invalide. Format attendu : `{UserDateParser.Format}` (ex. `{UserDateParser.Example}`).");
             return;
         }
 
@@ -95,22 +88,6 @@ public sealed class AgendaModule(
 
         await RespondAsync($"🗑️ Événement #{id} « {result.Value.Title} » supprimé.");
     }
-
-    private bool TryParseUserDate(string text, out DateTimeOffset startsAt)
-    {
-        startsAt = default;
-        if (!DateTime.TryParseExact(text, UserDateFormat, French, DateTimeStyles.None, out var parsed))
-            return false;
-
-        var localDate = DateTime.SpecifyKind(parsed, DateTimeKind.Unspecified);
-        if (IsSkippedByDaylightSavingTime(localDate))
-            return false;
-
-        startsAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(localDate, _userTimeZone));
-        return true;
-    }
-
-    private bool IsSkippedByDaylightSavingTime(DateTime localDate) => _userTimeZone.IsInvalidTime(localDate);
 
     private Task RespondWithErrorAsync(Error error) => RespondWithErrorAsync(error.Message);
 

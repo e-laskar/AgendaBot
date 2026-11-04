@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\AgendaBot.Discord\AgendaBot.Discord.csproj" />
     <ProjectReference Include="..\..\src\AgendaBot.Persistence\AgendaBot.Persistence.csproj" />
     <ProjectReference Include="..\AgendaBot.Testing\AgendaBot.Testing.csproj" />
   </ItemGroup>
