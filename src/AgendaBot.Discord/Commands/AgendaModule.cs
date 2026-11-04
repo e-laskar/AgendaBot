@@ -26,7 +26,7 @@ public sealed class AgendaModule(
     {
         if (!userDateParser.TryParse(date, out var startsAt))
         {
-            await RespondWithErrorAsync($"Date invalide. Format attendu : `{UserDateParser.Format}` (ex. `{UserDateParser.Example}`).");
+            await RespondPrivatelyAsync(AgendaEventMessages.InvalidDate);
             return;
         }
 
@@ -45,7 +45,7 @@ public sealed class AgendaModule(
             return;
         }
 
-        await RespondAsync("✅ Événement ajouté !", embed: AgendaEventEmbeds.Details(result.Value));
+        await RespondAsync(AgendaEventMessages.Added, embed: AgendaEventEmbeds.Details(result.Value));
     }
 
     [SlashCommand("lister", "Affiche les prochains événements")]
@@ -55,7 +55,7 @@ public sealed class AgendaModule(
         var events = await listUpcomingEvents.HandleAsync(CurrentGuild, count);
         if (events.Count == 0)
         {
-            await RespondAsync("📭 Aucun événement à venir.", ephemeral: true);
+            await RespondPrivatelyAsync(AgendaEventMessages.NoUpcomingEvents);
             return;
         }
 
@@ -86,10 +86,10 @@ public sealed class AgendaModule(
             return;
         }
 
-        await RespondAsync($"🗑️ Événement #{id} « {result.Value.Title} » supprimé.");
+        await RespondAsync(AgendaEventMessages.Deleted(result.Value));
     }
 
-    private Task RespondWithErrorAsync(Error error) => RespondWithErrorAsync(error.Message);
+    private Task RespondWithErrorAsync(Error error) => RespondPrivatelyAsync(AgendaEventMessages.Error(error));
 
-    private Task RespondWithErrorAsync(string message) => RespondAsync($"❌ {message}", ephemeral: true);
+    private Task RespondPrivatelyAsync(string message) => RespondAsync(message, ephemeral: true);
 }

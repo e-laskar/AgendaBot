@@ -21,11 +21,7 @@ public sealed class DiscordReminderNotifier(DiscordSocketClient client, ILogger<
         }
 
         await channel.SendMessageAsync(
-            ReminderMessage(evt),
+            AgendaEventMessages.Reminder(evt),
             options: new RequestOptions { CancelToken = cancellationToken });
     }
-
-    private static string ReminderMessage(AgendaEvent evt) =>
-        $"⏰ Rappel : **{evt.Title}** commence {DiscordTimestamps.RelativeToViewer(evt.StartsAt)} " +
-        $"({DiscordTimestamps.TimeInViewerTimeZone(evt.StartsAt)}).";
 }

@@ -30,7 +30,8 @@ Un rappel est posté dans le salon d'origine `ReminderMinutesBefore` minutes ava
 | Projet | Contenu | Prérequis |
 |---|---|---|
 | `tests/AgendaBot.UnitTests` | Domaine, cas d'usage, contrat du repository sur le fake en mémoire | aucun |
-| `tests/AgendaBot.ComponentTests` | Contrat du repository sur PostgreSQL réel (Testcontainers) | Docker démarré |
+| `tests/AgendaBot.ComponentTests` — `Discord/` | Lecture des dates (fuseau, heure d'été), embeds et messages | aucun |
+| `tests/AgendaBot.ComponentTests` — `Persistence/` | Contrat du repository sur PostgreSQL réel (Testcontainers) | Docker démarré |
 
 ```bash
 dotnet test --project tests/AgendaBot.UnitTests
@@ -137,14 +138,14 @@ src/
   AgendaBot.Application/         Cas d'usage et ports
     Ports/                       IEventRepository, IReminderNotifier
     UseCases/                    AddEvent, ListUpcomingEvents, GetEvent, DeleteEvent, SendDueReminders
-  AgendaBot.Persistence/         Adaptateur EF Core PostgreSQL
-  AgendaBot.Host/                Adaptateurs Discord et composition
-    Program.cs, AgendaBotSetup.cs  Démarrage et enregistrement des services
-    Modules/                     Slash commands /agenda
-    Services/                    Connexion Discord, envoi des rappels, worker
-    Configuration/               Options et chargement du .env
+  AgendaBot.Persistence/         Adaptateur EF Core PostgreSQL, migrations
+  AgendaBot.Discord/             Adaptateur Discord
+    Commands/                    Slash commands /agenda, lecture des dates saisies
+    Presentation/                Embeds et messages
+    Reminders/                   Envoi des rappels, worker périodique
+  AgendaBot.Host/                Démarrage, assemblage des services, chargement du .env
 tests/
   AgendaBot.Testing/             Builder, fakes et contrat du repository (partagés)
   AgendaBot.UnitTests/           Tests unitaires (xUnit v3 + Shouldly)
-  AgendaBot.ComponentTests/      Contrat du repository sur PostgreSQL (Testcontainers)
+  AgendaBot.ComponentTests/      Adaptateurs : Discord (sans infra), PostgreSQL (Testcontainers)
 ```
