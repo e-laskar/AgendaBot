@@ -11,11 +11,13 @@ internal static class AgendaEventMessages
     public static readonly string InvalidDate =
         Error($"Date invalide. Format attendu : `{UserDateParser.Format}` (ex. `{UserDateParser.Example}`).");
 
-    public static string Reminder(AgendaEvent evt) =>
-        $"⏰ Rappel : **{evt.Title}** commence {DiscordTimestamps.RelativeToViewer(evt.StartsAt)} " +
-        $"({DiscordTimestamps.TimeInViewerTimeZone(evt.StartsAt)}).";
+    public static OutgoingMessage Reminder(AgendaEvent evt) =>
+        OutgoingMessage.PingingNobody(
+            $"⏰ Rappel : **{evt.Title}** commence {DiscordTimestamps.RelativeToViewer(evt.StartsAt)} " +
+            $"({DiscordTimestamps.TimeInViewerTimeZone(evt.StartsAt)}).");
 
-    public static string Deleted(AgendaEvent evt) => $"🗑️ Événement #{evt.Id} « {evt.Title} » supprimé.";
+    public static OutgoingMessage Deleted(AgendaEvent evt) =>
+        OutgoingMessage.PingingNobody($"🗑️ Événement #{evt.Id} « {evt.Title} » supprimé.");
 
     public static string Error(Error error) => Error(error.Message);
 

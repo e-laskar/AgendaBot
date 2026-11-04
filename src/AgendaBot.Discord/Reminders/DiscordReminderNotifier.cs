@@ -20,8 +20,10 @@ public sealed class DiscordReminderNotifier(DiscordSocketClient client, ILogger<
             return;
         }
 
+        var reminder = AgendaEventMessages.Reminder(evt);
         await channel.SendMessageAsync(
-            AgendaEventMessages.Reminder(evt),
+            reminder.Text,
+            allowedMentions: reminder.AllowedMentions,
             options: new RequestOptions { CancelToken = cancellationToken });
     }
 }

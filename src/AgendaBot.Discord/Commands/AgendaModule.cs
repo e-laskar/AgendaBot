@@ -89,6 +89,9 @@ public sealed class AgendaModule(
         await RespondAsync(AgendaEventMessages.Deleted(result.Value));
     }
 
+    private Task RespondAsync(OutgoingMessage message) =>
+        RespondAsync(message.Text, allowedMentions: message.AllowedMentions);
+
     private Task RespondWithErrorAsync(Error error) => RespondPrivatelyAsync(AgendaEventMessages.Error(error));
 
     private Task RespondPrivatelyAsync(string message) => RespondAsync(message, ephemeral: true);

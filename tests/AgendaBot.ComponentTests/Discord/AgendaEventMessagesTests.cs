@@ -6,13 +6,23 @@ namespace AgendaBot.ComponentTests.Discord;
 
 public class AgendaEventMessagesTests
 {
+    private const string TitleTryingToPingEveryone = "@everyone @here <@&123456789012345678> <@987654321098765432>";
+
     [Fact]
     public void Reminder_gives_title_and_start_relative_to_now_and_as_time()
     {
         var evt = new AnAgendaEvent().Titled("Réunion").BuildPersisted(7);
         var unix = evt.StartsAt.ToUnixTimeSeconds();
 
-        AgendaEventMessages.Reminder(evt).ShouldBe($"⏰ Rappel : **Réunion** commence <t:{unix}:R> (<t:{unix}:t>).");
+        AgendaEventMessages.Reminder(evt).Text.ShouldBe($"⏰ Rappel : **Réunion** commence <t:{unix}:R> (<t:{unix}:t>).");
+    }
+
+    [Fact]
+    public void Reminder_pings_nobody_even_when_the_title_contains_mentions()
+    {
+        var evt = new AnAgendaEvent().Titled(TitleTryingToPingEveryone).BuildPersisted(7);
+
+        AgendaEventMessages.Reminder(evt).ShouldPingNobody();
     }
 
     [Fact]
@@ -20,7 +30,15 @@ public class AgendaEventMessagesTests
     {
         var evt = new AnAgendaEvent().Titled("Réunion").BuildPersisted(7);
 
-        AgendaEventMessages.Deleted(evt).ShouldBe("🗑️ Événement #7 « Réunion » supprimé.");
+        AgendaEventMessages.Deleted(evt).Text.ShouldBe("🗑️ Événement #7 « Réunion » supprimé.");
+    }
+
+    [Fact]
+    public void Deletion_confirmation_pings_nobody_even_when_the_title_contains_mentions()
+    {
+        var evt = new AnAgendaEvent().Titled(TitleTryingToPingEveryone).BuildPersisted(7);
+
+        AgendaEventMessages.Deleted(evt).ShouldPingNobody();
     }
 
     [Fact]
