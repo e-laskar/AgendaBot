@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cœur métier : aucune dépendance (ni NuGet, ni autre projet). -->
+
+</Project>

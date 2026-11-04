@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AgendaBot.Host\AgendaBot.Host.csproj" />
+    <ProjectReference Include="..\..\src\AgendaBot.Domain\AgendaBot.Domain.csproj" />
   </ItemGroup>
 
 </Project>
