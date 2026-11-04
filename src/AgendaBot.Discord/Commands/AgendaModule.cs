@@ -26,10 +26,11 @@ public sealed class AgendaModule(
     {
         if (!userDateParser.TryParse(date, out var startsAt))
         {
-            await RespondPrivatelyAsync(AgendaEventMessages.InvalidDate);
+            await RespondAsync(AgendaEventMessages.InvalidDate, ephemeral: true);
             return;
         }
 
+        await DeferAsync();
         var result = await addEvent.HandleAsync(new AddEventCommand(
             CurrentGuild,
             new ChannelId(Context.Channel.Id),
@@ -41,58 +42,73 @@ public sealed class AgendaModule(
 
         if (!result.IsSuccess)
         {
-            await RespondWithErrorAsync(result.Error);
+            await CompleteWithErrorAsync(result.Error);
             return;
         }
 
-        await RespondAsync(AgendaEventMessages.Added, embed: AgendaEventEmbeds.Details(result.Value));
+        await CompletePubliclyAsync(
+            OutgoingMessage.PingingNobody(AgendaEventMessages.Added),
+            AgendaEventEmbeds.Details(result.Value));
     }
 
     [SlashCommand("lister", "Affiche les prochains événements")]
     public async Task ListAsync(
         [Summary("nombre", "Nombre d'événements à afficher"), MinValue(1), MaxValue(25)] int count = 10)
     {
+        await DeferAsync();
         var events = await listUpcomingEvents.HandleAsync(CurrentGuild, count);
         if (events.Count == 0)
         {
-            await RespondPrivatelyAsync(AgendaEventMessages.NoUpcomingEvents);
+            await CompletePrivatelyAsync(AgendaEventMessages.NoUpcomingEvents);
             return;
         }
 
-        await RespondAsync(embed: AgendaEventEmbeds.UpcomingList(events));
+        await CompletePubliclyAsync(embed: AgendaEventEmbeds.UpcomingList(events));
     }
 
     [SlashCommand("voir", "Affiche le détail d'un événement")]
     public async Task ShowAsync([Summary("id", "Identifiant de l'événement")] int id)
     {
+        await DeferAsync();
         var result = await getEvent.HandleAsync(CurrentGuild, id);
         if (!result.IsSuccess)
         {
-            await RespondWithErrorAsync(result.Error);
+            await CompleteWithErrorAsync(result.Error);
             return;
         }
 
-        await RespondAsync(embed: AgendaEventEmbeds.Details(result.Value));
+        await CompletePubliclyAsync(embed: AgendaEventEmbeds.Details(result.Value));
     }
 
     [SlashCommand("supprimer", "Supprime un événement")]
     [RequireUserPermission(GuildPermission.ManageEvents)]
     public async Task DeleteAsync([Summary("id", "Identifiant de l'événement")] int id)
     {
+        await DeferAsync();
         var result = await deleteEvent.HandleAsync(CurrentGuild, id);
         if (!result.IsSuccess)
         {
-            await RespondWithErrorAsync(result.Error);
+            await CompleteWithErrorAsync(result.Error);
             return;
         }
 
-        await RespondAsync(AgendaEventMessages.Deleted(result.Value));
+        await CompletePubliclyAsync(AgendaEventMessages.Deleted(result.Value));
     }
 
-    private Task RespondAsync(OutgoingMessage message) =>
-        RespondAsync(message.Text, allowedMentions: message.AllowedMentions);
+    private Task CompletePubliclyAsync(OutgoingMessage? message = null, Embed? embed = null) =>
+        ModifyOriginalResponseAsync(response =>
+        {
+            if (message is not null)
+            {
+                response.Content = message.Text;
+                response.AllowedMentions = message.AllowedMentions;
+            }
+            if (embed is not null)
+                response.Embed = embed;
+        });
 
-    private Task RespondWithErrorAsync(Error error) => RespondPrivatelyAsync(AgendaEventMessages.Error(error));
+    private Task CompleteWithErrorAsync(Error error) => CompletePrivatelyAsync(AgendaEventMessages.Error(error));
 
-    private Task RespondPrivatelyAsync(string message) => RespondAsync(message, ephemeral: true);
+    private Task CompletePrivatelyAsync(string message) =>
+        Context.Interaction.ReplacePublicDeferralWithPrivateMessageAsync(message);
 }

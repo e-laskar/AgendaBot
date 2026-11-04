@@ -96,7 +96,7 @@ public sealed class DiscordBotService : IHostedService
             : "❌ Une erreur est survenue lors de l'exécution de la commande.";
 
         if (context.Interaction.HasResponded)
-            await context.Interaction.FollowupAsync(message, ephemeral: true);
+            await context.Interaction.ReplacePublicDeferralWithPrivateMessageAsync(message);
         else
             await context.Interaction.RespondAsync(message, ephemeral: true);
     }
