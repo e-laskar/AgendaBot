@@ -49,4 +49,14 @@ public sealed class AgendaEvent
             guildId, channelId, createdBy, title, description,
             startsAt.ToUniversalTime(), duration);
     }
+
+    /// <summary>
+    /// Vrai si le rappel n'a pas encore été envoyé et que l'événement, pas encore commencé,
+    /// commence au plus tard à <paramref name="now"/> + <paramref name="window"/>.
+    /// </summary>
+    public bool IsReminderDue(DateTimeOffset now, TimeSpan window) =>
+        !ReminderSent && StartsAt > now && StartsAt <= now + window;
+
+    /// <summary>Idempotent : peut être appelé plusieurs fois sans effet supplémentaire.</summary>
+    public void MarkReminderSent() => ReminderSent = true;
 }
