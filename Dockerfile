@@ -8,6 +8,7 @@ WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/AgendaBot.Domain/AgendaBot.Domain.csproj src/AgendaBot.Domain/
 COPY src/AgendaBot.Application/AgendaBot.Application.csproj src/AgendaBot.Application/
+COPY src/AgendaBot.Persistence/AgendaBot.Persistence.csproj src/AgendaBot.Persistence/
 COPY src/AgendaBot.Host/AgendaBot.Host.csproj src/AgendaBot.Host/
 RUN dotnet restore src/AgendaBot.Host/AgendaBot.Host.csproj
 

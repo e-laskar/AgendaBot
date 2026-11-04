@@ -2,7 +2,7 @@ using AgendaBot.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace AgendaBot.Data;
+namespace AgendaBot.Persistence;
 
 public class AgendaDbContext(DbContextOptions<AgendaDbContext> options) : DbContext(options)
 {

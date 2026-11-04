@@ -1,5 +1,6 @@
 using AgendaBot;
 using AgendaBot.Configuration;
+using AgendaBot.Persistence;
 using Microsoft.Extensions.Hosting;
 
 DotEnv.Load();
@@ -15,6 +16,6 @@ builder.Services
 var host = builder.Build();
 
 host.Services.FailFastOnInvalidBotOptions();
-await host.Services.EnsureDatabaseCreatedAsync();
+await host.Services.EnsureAgendaDatabaseCreatedAsync();
 
 await host.RunAsync();

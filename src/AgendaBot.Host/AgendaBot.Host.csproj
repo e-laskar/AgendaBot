@@ -8,14 +8,13 @@
 
   <ItemGroup>
     <PackageReference Include="Discord.Net" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AgendaBot.Domain\AgendaBot.Domain.csproj" />
     <ProjectReference Include="..\AgendaBot.Application\AgendaBot.Application.csproj" />
+    <ProjectReference Include="..\AgendaBot.Persistence\AgendaBot.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

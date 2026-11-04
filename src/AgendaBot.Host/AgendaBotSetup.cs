@@ -1,12 +1,11 @@
 using AgendaBot.Application.Ports;
 using AgendaBot.Application.UseCases;
 using AgendaBot.Configuration;
-using AgendaBot.Data;
+using AgendaBot.Persistence;
 using AgendaBot.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -36,9 +35,7 @@ internal static class AgendaBotSetup
             throw new InvalidOperationException("Chaîne de connexion manquante : définir ConnectionStrings__Agenda.");
 
         var provider = configuration["Database:Provider"] ?? "Sqlite";
-        services.AddDbContextFactory<AgendaDbContext>(options => UseProvider(options, provider, connectionString));
-        services.AddSingleton<IEventRepository, EfEventRepository>();
-        return services;
+        return services.AddAgendaPersistence(provider, connectionString);
     }
 
     public static IServiceCollection AddAgendaUseCases(this IServiceCollection services)
@@ -72,27 +69,4 @@ internal static class AgendaBotSetup
 
     public static void FailFastOnInvalidBotOptions(this IServiceProvider services) =>
         _ = services.GetRequiredService<IOptions<BotOptions>>().Value;
-
-    public static async Task EnsureDatabaseCreatedAsync(this IServiceProvider services)
-    {
-        var dbFactory = services.GetRequiredService<IDbContextFactory<AgendaDbContext>>();
-        await using var db = await dbFactory.CreateDbContextAsync();
-        await db.Database.EnsureCreatedAsync();
-    }
-
-    private static void UseProvider(DbContextOptionsBuilder options, string provider, string connectionString)
-    {
-        switch (provider.ToLowerInvariant())
-        {
-            case "sqlite":
-                options.UseSqlite(connectionString);
-                break;
-            case "postgres" or "postgresql" or "npgsql":
-                options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure());
-                break;
-            default:
-                throw new InvalidOperationException(
-                    $"Database__Provider inconnu : « {provider} » (valeurs possibles : Sqlite, Postgres).");
-        }
-    }
 }

@@ -1,6 +1,6 @@
 using AgendaBot.Domain;
 
-namespace AgendaBot.Data;
+namespace AgendaBot.Persistence;
 
 internal static class EventRecordMapping
 {

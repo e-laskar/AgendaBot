@@ -2,7 +2,7 @@ using AgendaBot.Application.Ports;
 using AgendaBot.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace AgendaBot.Data;
+namespace AgendaBot.Persistence;
 
 public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFactory) : IEventRepository
 {

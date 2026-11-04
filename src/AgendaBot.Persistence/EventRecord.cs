@@ -1,4 +1,4 @@
-namespace AgendaBot.Data;
+namespace AgendaBot.Persistence;
 
 public class EventRecord
 {
