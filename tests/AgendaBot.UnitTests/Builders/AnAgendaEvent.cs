@@ -2,7 +2,6 @@ using AgendaBot.Domain;
 
 namespace AgendaBot.UnitTests.Builders;
 
-/// <summary>Builder de test : un événement valide par défaut, dont on ne précise que ce qui compte pour le test.</summary>
 internal sealed class AnAgendaEvent
 {
     public static readonly DateTimeOffset DefaultNow = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
@@ -35,9 +34,8 @@ internal sealed class AnAgendaEvent
 
     public AgendaEvent Build() => TryBuild().Value;
 
-    /// <summary>Événement tel que relu depuis la persistance (Id attribué, règles de création non appliquées).</summary>
     public AgendaEvent BuildPersisted(int id, bool reminderSent = false) =>
-        AgendaEvent.Restore(
+        AgendaEvent.RestoreFromPersistence(
             id, _guildId, _channelId, _createdBy,
             EventTitle.Create(_title).Value,
             EventDescription.CreateOptional(_description).Value,

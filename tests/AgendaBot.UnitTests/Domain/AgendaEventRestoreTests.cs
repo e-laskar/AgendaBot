@@ -11,7 +11,7 @@ public class AgendaEventRestoreTests
         var description = EventDescription.CreateOptional("Salle 2").Value;
         var pastStart = new DateTimeOffset(2020, 1, 1, 10, 0, 0, TimeSpan.Zero);
 
-        var evt = AgendaEvent.Restore(
+        var evt = AgendaEvent.RestoreFromPersistence(
             7, new GuildId(1), new ChannelId(2), new UserId(3),
             title, description, pastStart, TimeSpan.FromMinutes(30), reminderSent: true);
 
@@ -32,7 +32,7 @@ public class AgendaEventRestoreTests
     {
         var parisTime = new DateTimeOffset(2026, 12, 24, 20, 0, 0, TimeSpan.FromHours(1));
 
-        var evt = AgendaEvent.Restore(
+        var evt = AgendaEvent.RestoreFromPersistence(
             7, new GuildId(1), new ChannelId(2), new UserId(3),
             EventTitle.Create("Réunion").Value, null, parisTime, null, reminderSent: false);
 

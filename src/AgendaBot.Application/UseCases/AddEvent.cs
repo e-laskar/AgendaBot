@@ -3,7 +3,6 @@ using AgendaBot.Domain;
 
 namespace AgendaBot.Application.UseCases;
 
-/// <summary>Saisie brute de l'utilisateur ; la date est déjà convertie depuis son fuseau horaire.</summary>
 public sealed record AddEventCommand(
     GuildId GuildId,
     ChannelId ChannelId,
@@ -13,7 +12,6 @@ public sealed record AddEventCommand(
     DateTimeOffset StartsAt,
     TimeSpan? Duration);
 
-/// <summary>Ajoute un événement à l'agenda d'un serveur.</summary>
 public sealed class AddEvent(IEventRepository repository, TimeProvider time)
 {
     public async Task<Result<AgendaEvent>> HandleAsync(

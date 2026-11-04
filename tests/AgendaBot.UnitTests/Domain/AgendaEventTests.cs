@@ -43,7 +43,7 @@ public class AgendaEventTests
         var evt = new AnAgendaEvent().StartingAt(parisTime).Build();
 
         evt.StartsAt.Offset.ShouldBe(TimeSpan.Zero);
-        evt.StartsAt.ShouldBe(parisTime); // même instant
+        evt.StartsAt.ShouldBe(parisTime);
     }
 
     [Fact]

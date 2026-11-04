@@ -3,10 +3,6 @@ using AgendaBot.Domain;
 
 namespace AgendaBot.Application.UseCases;
 
-/// <summary>
-/// Supprime un événement d'un serveur et le renvoie. Le contrôle des permissions
-/// (« Gérer les événements ») est fait par l'adaptateur Discord.
-/// </summary>
 public sealed class DeleteEvent(IEventRepository repository)
 {
     public async Task<Result<AgendaEvent>> HandleAsync(

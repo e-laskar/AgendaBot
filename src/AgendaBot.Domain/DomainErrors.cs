@@ -1,6 +1,5 @@
 namespace AgendaBot.Domain;
 
-/// <summary>Erreurs métier du domaine. Les messages sont destinés aux utilisateurs Discord.</summary>
 public static class DomainErrors
 {
     public static readonly Error TitleRequired =

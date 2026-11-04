@@ -3,7 +3,6 @@ using AgendaBot.Domain;
 
 namespace AgendaBot.UnitTests.Application.Fakes;
 
-/// <summary>Enregistre les rappels envoyés ; peut simuler une panne pour un événement donné.</summary>
 internal sealed class SpyReminderNotifier : IReminderNotifier
 {
     private readonly List<AgendaEvent> _notified = [];

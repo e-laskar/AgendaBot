@@ -1,9 +1,5 @@
 namespace AgendaBot.Domain;
 
-/// <summary>
-/// Résultat d'une opération métier : une valeur en cas de succès, une <see cref="Error"/> sinon.
-/// Classe (et non struct) pour qu'un <c>default</c> ne puisse pas produire un résultat incohérent.
-/// </summary>
 public sealed class Result<T>
 {
     private readonly T? _value;

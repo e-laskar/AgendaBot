@@ -3,10 +3,6 @@ using AgendaBot.Domain;
 
 namespace AgendaBot.UnitTests.Application.Fakes;
 
-/// <summary>
-/// Fake en mémoire du repository. Comme une vraie base, il stocke des copies :
-/// modifier un événement renvoyé n'a pas d'effet tant que UpdateAsync n'est pas appelé.
-/// </summary>
 internal sealed class InMemoryEventRepository : IEventRepository
 {
     private readonly Dictionary<int, AgendaEvent> _events = [];
@@ -14,7 +10,6 @@ internal sealed class InMemoryEventRepository : IEventRepository
 
     public IReadOnlyCollection<AgendaEvent> All => _events.Values.Select(Copy).ToList();
 
-    /// <summary>Ajoute directement un événement déjà persisté (préparation des tests).</summary>
     public void Seed(params AgendaEvent[] events)
     {
         foreach (var evt in events)
@@ -34,7 +29,7 @@ internal sealed class InMemoryEventRepository : IEventRepository
     public Task<AgendaEvent?> GetAsync(GuildId guildId, int id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_events.TryGetValue(id, out var evt) && evt.GuildId == guildId ? Copy(evt) : null);
 
-    public Task<IReadOnlyList<AgendaEvent>> GetUpcomingAsync(
+    public Task<IReadOnlyList<AgendaEvent>> GetUpcomingByStartDateAsync(
         GuildId guildId, DateTimeOffset from, int max, CancellationToken cancellationToken = default) =>
         Result(_events.Values
             .Where(e => e.GuildId == guildId && e.StartsAt >= from)
@@ -45,7 +40,7 @@ internal sealed class InMemoryEventRepository : IEventRepository
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default) =>
         Result(_events.Values.Where(e => !e.ReminderSent && e.StartsAt > after && e.StartsAt <= until));
 
-    public Task UpdateAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    public Task SaveReminderSentAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {
         if (!_events.ContainsKey(evt.Id))
             throw new InvalidOperationException($"Événement {evt.Id} inexistant.");
@@ -65,7 +60,7 @@ internal sealed class InMemoryEventRepository : IEventRepository
     private static AgendaEvent Copy(AgendaEvent evt) => CopyWithId(evt, evt.Id);
 
     private static AgendaEvent CopyWithId(AgendaEvent evt, int id) =>
-        AgendaEvent.Restore(
+        AgendaEvent.RestoreFromPersistence(
             id, evt.GuildId, evt.ChannelId, evt.CreatedBy, evt.Title, evt.Description,
             evt.StartsAt, evt.Duration, evt.ReminderSent);
 }

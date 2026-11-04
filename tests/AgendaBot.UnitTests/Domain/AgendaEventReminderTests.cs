@@ -30,8 +30,8 @@ public class AgendaEventReminderTests
     }
 
     [Theory]
-    [InlineData(0)]   // commence pile maintenant
-    [InlineData(5)]   // a commencé il y a 5 min
+    [InlineData(0)]
+    [InlineData(5)]
     public void Reminder_is_not_due_when_event_has_started(int minutesSinceStart)
     {
         var evt = EventStartingAt(Now.AddMinutes(1));

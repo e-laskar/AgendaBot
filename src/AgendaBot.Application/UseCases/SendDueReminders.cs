@@ -49,6 +49,6 @@ public sealed class SendDueReminders(
     {
         await notifier.NotifyAsync(evt, cancellationToken);
         evt.MarkReminderSent();
-        await repository.UpdateAsync(evt, cancellationToken);
+        await repository.SaveReminderSentAsync(evt, cancellationToken);
     }
 }

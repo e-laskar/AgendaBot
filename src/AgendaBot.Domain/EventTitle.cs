@@ -1,6 +1,5 @@
 namespace AgendaBot.Domain;
 
-/// <summary>Titre d'un événement : non vide, sans espaces superflus, <see cref="MaxLength"/> caractères au plus.</summary>
 public sealed record EventTitle
 {
     public const int MaxLength = 100;
