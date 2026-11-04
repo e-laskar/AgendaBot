@@ -15,6 +15,7 @@ public sealed class DiscordBotService : IHostedService
     private readonly IServiceProvider _services;
     private readonly BotOptions _options;
     private readonly ILogger<DiscordBotService> _logger;
+    private readonly UntilFirstSuccess _commandsRegistration;
 
     public DiscordBotService(
         DiscordSocketClient client,
@@ -28,13 +29,14 @@ public sealed class DiscordBotService : IHostedService
         _services = services;
         _options = options.Value;
         _logger = logger;
+        _commandsRegistration = new UntilFirstSuccess(RegisterCommandsAsync);
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _client.Log += LogAsync;
         _interactions.Log += LogAsync;
-        _client.Ready += RegisterCommandsAsync;
+        _client.Ready += RegisterCommandsOnFirstSuccessfulReadyAsync;
         _client.InteractionCreated += HandleInteractionAsync;
         _interactions.SlashCommandExecuted += OnSlashCommandExecutedAsync;
 
@@ -48,6 +50,18 @@ public sealed class DiscordBotService : IHostedService
     {
         await _client.StopAsync();
         await _client.LogoutAsync();
+    }
+
+    private async Task RegisterCommandsOnFirstSuccessfulReadyAsync()
+    {
+        try
+        {
+            await _commandsRegistration.RunAsync();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Échec de l'enregistrement des commandes, nouvel essai à la prochaine connexion");
+        }
     }
 
     private async Task RegisterCommandsAsync()
