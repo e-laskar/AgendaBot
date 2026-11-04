@@ -11,7 +11,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services
     .AddDiscordBot(builder.Configuration)
     .AddAgendaDatabase(builder.Configuration)
-    .AddAgendaUseCases();
+    .AddAgendaUseCases(builder.Configuration);
 
 var host = builder.Build();
 

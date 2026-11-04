@@ -36,6 +36,16 @@ public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFacto
         return records.Select(r => r.ToDomain()).ToList();
     }
 
+    public async Task<int> CountUpcomingCreatedByAsync(
+        GuildId guildId, UserId creator, DateTimeOffset from, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var fromUtc = from.UtcDateTime;
+        return await db.Events.CountAsync(
+            e => e.GuildId == guildId.Value && e.CreatedByUserId == creator.Value && e.StartsAtUtc >= fromUtc,
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<AgendaEvent>> GetWithoutReminderStartingBetweenAsync(
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default)
     {

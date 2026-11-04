@@ -18,9 +18,12 @@ internal static class AgendaBotSetup
         return services.AddAgendaPersistence(connectionString);
     }
 
-    public static IServiceCollection AddAgendaUseCases(this IServiceCollection services)
+    public static IServiceCollection AddAgendaUseCases(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddValidatedAgendaOptions(configuration);
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(sp => new CreationQuota(
+            sp.GetRequiredService<IOptions<AgendaOptions>>().Value.MaxUpcomingEventsPerCreator));
         services.AddSingleton(sp => new ReminderSettings(
             TimeSpan.FromMinutes(sp.GetRequiredService<IOptions<BotOptions>>().Value.ReminderMinutesBefore)));
         services.AddSingleton<AddEvent>();
@@ -30,4 +33,11 @@ internal static class AgendaBotSetup
         services.AddSingleton<SendDueReminders>();
         return services;
     }
+
+    private static void AddValidatedAgendaOptions(this IServiceCollection services, IConfiguration configuration) =>
+        services.AddOptions<AgendaOptions>()
+            .Bind(configuration.GetSection(AgendaOptions.SectionName))
+            .Validate(o => o.MaxUpcomingEventsPerCreator > 0,
+                "Agenda__MaxUpcomingEventsPerCreator doit être strictement positif.")
+            .ValidateOnStart();
 }

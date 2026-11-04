@@ -1,3 +1,4 @@
+using AgendaBot.Application;
 using AgendaBot.Application.UseCases;
 using AgendaBot.Domain;
 using AgendaBot.Testing.Fakes;
@@ -8,12 +9,14 @@ namespace AgendaBot.UnitTests.Application;
 public class AddEventTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
+    private const int MaxUpcomingEventsPerCreator = 2;
 
     private readonly InMemoryEventRepository _repository = new();
     private readonly FakeTimeProvider _time = new(Now);
     private readonly AddEvent _addEvent;
 
-    public AddEventTests() => _addEvent = new AddEvent(_repository, _time);
+    public AddEventTests() =>
+        _addEvent = new AddEvent(_repository, _time, new CreationQuota(MaxUpcomingEventsPerCreator));
 
     private static AddEventCommand ValidCommand() => new(
         new GuildId(1), new ChannelId(2), new UserId(3),
@@ -87,5 +90,43 @@ public class AddEventTests
         result.IsSuccess.ShouldBeTrue();
         result.Value.Description.ShouldBeNull();
         result.Value.Duration.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Rejects_event_once_the_creator_has_reached_their_quota_of_upcoming_events()
+    {
+        await AddEventsAsync(MaxUpcomingEventsPerCreator, ValidCommand());
+
+        var result = await _addEvent.HandleAsync(ValidCommand());
+
+        result.Error.ShouldBe(ApplicationErrors.TooManyUpcomingEvents(MaxUpcomingEventsPerCreator));
+        _repository.All.Count.ShouldBe(MaxUpcomingEventsPerCreator);
+    }
+
+    [Fact]
+    public async Task Quota_frees_up_once_the_creator_events_are_past()
+    {
+        await AddEventsAsync(MaxUpcomingEventsPerCreator, ValidCommand() with { StartsAt = Now.AddMinutes(10) });
+        _time.Advance(TimeSpan.FromMinutes(11));
+
+        var result = await _addEvent.HandleAsync(ValidCommand());
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Quota_is_counted_per_creator()
+    {
+        await AddEventsAsync(MaxUpcomingEventsPerCreator, ValidCommand());
+
+        var result = await _addEvent.HandleAsync(ValidCommand() with { CreatedBy = new UserId(4) });
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    private async Task AddEventsAsync(int count, AddEventCommand command)
+    {
+        for (var i = 0; i < count; i++)
+            (await _addEvent.HandleAsync(command)).IsSuccess.ShouldBeTrue();
     }
 }

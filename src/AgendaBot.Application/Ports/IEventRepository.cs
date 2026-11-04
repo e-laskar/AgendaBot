@@ -11,6 +11,9 @@ public interface IEventRepository
     Task<IReadOnlyList<AgendaEvent>> GetUpcomingByStartDateAsync(
         GuildId guildId, DateTimeOffset from, int max, CancellationToken cancellationToken = default);
 
+    Task<int> CountUpcomingCreatedByAsync(
+        GuildId guildId, UserId creator, DateTimeOffset from, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<AgendaEvent>> GetWithoutReminderStartingBetweenAsync(
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default);
 

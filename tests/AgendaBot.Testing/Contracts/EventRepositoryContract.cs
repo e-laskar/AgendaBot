@@ -222,6 +222,29 @@ public abstract class EventRepositoryContract
         (await repository.GetAsync(Guild, kept.Id)).ShouldNotBeNull();
     }
 
+    [Fact]
+    public async Task Counts_upcoming_events_created_by_the_user_in_the_guild()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var creator = new UserId(42);
+        await repository.AddAsync(AnEvent().CreatedBy(creator).StartingAt(T0).Build());
+        await repository.AddAsync(AnEvent().CreatedBy(creator).StartingAt(T0.AddDays(1)).Build());
+
+        (await repository.CountUpcomingCreatedByAsync(Guild, creator, T0)).ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task Upcoming_events_count_ignores_past_events_other_creators_and_other_guilds()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var creator = new UserId(42);
+        await repository.AddAsync(AnEvent().CreatedBy(creator).StartingAt(T0.AddMinutes(-1)).Build());
+        await repository.AddAsync(AnEvent().CreatedBy(new UserId(43)).StartingAt(T0.AddDays(1)).Build());
+        await repository.AddAsync(AnEvent().CreatedBy(creator).InGuild(OtherGuild).StartingAt(T0.AddDays(1)).Build());
+
+        (await repository.CountUpcomingCreatedByAsync(Guild, creator, T0)).ShouldBe(0);
+    }
+
     private static void ShouldBeSameEvent(AgendaEvent? actual, AgendaEvent expected, int expectedId)
     {
         actual.ShouldNotBeNull();

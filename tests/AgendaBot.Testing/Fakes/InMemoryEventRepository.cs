@@ -38,6 +38,10 @@ public sealed class InMemoryEventRepository : IEventRepository
             .OrderBy(e => e.StartsAt)
             .Take(max));
 
+    public Task<int> CountUpcomingCreatedByAsync(
+        GuildId guildId, UserId creator, DateTimeOffset from, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_events.Values.Count(e => e.GuildId == guildId && e.CreatedBy == creator && e.StartsAt >= from));
+
     public Task<IReadOnlyList<AgendaEvent>> GetWithoutReminderStartingBetweenAsync(
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default) =>
         Result(_events.Values.Where(e => !e.ReminderSent && e.StartsAt > after && e.StartsAt <= until));
