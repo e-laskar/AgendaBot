@@ -50,6 +50,16 @@ Le même contrat (`tests/AgendaBot.Testing/Contracts/EventRepositoryContract.cs`
 en mémoire et contre `EfEventRepository` sur PostgreSQL : le fake utilisé par les tests unitaires se comporte
 donc comme la vraie base.
 
+### Intégration continue
+
+`.github/workflows/ci.yml` s'exécute à chaque push sur `main`, sur chaque pull request et à la demande :
+
+- **Compilation et tests** : compilation Release (warnings = erreurs), puis tests unitaires, d'architecture et
+  de composant. Docker est disponible sur les runners GitHub : le contrat du repository y tourne sur un vrai
+  PostgreSQL. Toutes les suites s'exécutent même si l'une échoue ; les rapports TRX sont publiés en artefact
+  `rapports-de-tests`.
+- **Image Docker** : construction de l'image pour vérifier le `Dockerfile` (sans publication).
+
 ## Configuration
 
 Toutes les clés de `appsettings.json` peuvent être surchargées par variable d'environnement,

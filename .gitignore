@@ -8,3 +8,5 @@ appsettings.*.local.json
 .vs/
 *.user
 *.DotSettings.user
+
+TestResults/

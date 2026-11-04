@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  build-and-test:
+    name: Compilation et tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v7
+
+      - name: Installation du SDK .NET (version de global.json)
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restauration des packages
+        run: dotnet restore
+
+      - name: Compilation (warnings = erreurs)
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Tests unitaires
+        run: >-
+          dotnet test --no-build --configuration Release
+          --project tests/AgendaBot.UnitTests
+          --results-directory TestResults/UnitTests --report-xunit-trx
+
+      - name: Tests d'architecture
+        if: ${{ !cancelled() }}
+        run: >-
+          dotnet test --no-build --configuration Release
+          --project tests/AgendaBot.ArchitectureTests
+          --results-directory TestResults/ArchitectureTests --report-xunit-trx
+
+      - name: Tests de composant (Discord + PostgreSQL via Testcontainers)
+        if: ${{ !cancelled() }}
+        run: >-
+          dotnet test --no-build --configuration Release
+          --project tests/AgendaBot.ComponentTests
+          --results-directory TestResults/ComponentTests --report-xunit-trx
+
+      - name: Publication des rapports de tests
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: rapports-de-tests
+          path: TestResults/
+          if-no-files-found: ignore
+
+  docker-image:
+    name: Image Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v7
+
+      - name: Construction de l'image
+        run: docker build --tag agendabot:ci .
