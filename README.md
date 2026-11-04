@@ -27,11 +27,23 @@ Un rappel est posté dans le salon d'origine `ReminderMinutesBefore` minutes ava
 
 ## Tests
 
+| Projet | Contenu | Prérequis |
+|---|---|---|
+| `tests/AgendaBot.UnitTests` | Domaine, cas d'usage, contrat du repository sur le fake en mémoire | aucun |
+| `tests/AgendaBot.ComponentTests` | Contrat du repository sur PostgreSQL réel (Testcontainers) | Docker démarré |
+
 ```bash
-dotnet test
+dotnet test --project tests/AgendaBot.UnitTests
+```
+```bash
+dotnet test --project tests/AgendaBot.ComponentTests
 ```
 
-Tests unitaires : xUnit v3 + [Shouldly](https://docs.shouldly.org/) pour les assertions.
+`dotnet test` à la racine lance les deux. Assertions : [Shouldly](https://docs.shouldly.org/).
+
+Le même contrat (`tests/AgendaBot.Testing/Contracts/EventRepositoryContract.cs`) est exécuté contre le fake
+en mémoire et contre `EfEventRepository` sur PostgreSQL : le fake utilisé par les tests unitaires se comporte
+donc comme la vraie base.
 
 ## Configuration
 
@@ -119,11 +131,14 @@ src/
   AgendaBot.Application/         Cas d'usage et ports
     Ports/                       IEventRepository, IReminderNotifier
     UseCases/                    AddEvent, ListUpcomingEvents, GetEvent, DeleteEvent, SendDueReminders
-  AgendaBot.Host/                Adaptateurs et composition
+  AgendaBot.Persistence/         Adaptateur EF Core (SQLite / PostgreSQL)
+  AgendaBot.Host/                Adaptateurs Discord et composition
     Program.cs, AgendaBotSetup.cs  Démarrage et enregistrement des services
-    Data/                        Adaptateur EF Core (SQLite / PostgreSQL)
     Modules/                     Slash commands /agenda
     Services/                    Connexion Discord, envoi des rappels, worker
     Configuration/               Options et chargement du .env
-tests/AgendaBot.UnitTests/       Tests unitaires (xUnit v3 + Shouldly, fakes en mémoire)
+tests/
+  AgendaBot.Testing/             Builder, fakes et contrat du repository (partagés)
+  AgendaBot.UnitTests/           Tests unitaires (xUnit v3 + Shouldly)
+  AgendaBot.ComponentTests/      Contrat du repository sur PostgreSQL (Testcontainers)
 ```
