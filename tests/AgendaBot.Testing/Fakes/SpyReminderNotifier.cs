@@ -1,9 +1,9 @@
 using AgendaBot.Application.Ports;
 using AgendaBot.Domain;
 
-namespace AgendaBot.UnitTests.Application.Fakes;
+namespace AgendaBot.Testing.Fakes;
 
-internal sealed class SpyReminderNotifier : IReminderNotifier
+public sealed class SpyReminderNotifier : IReminderNotifier
 {
     private readonly List<AgendaEvent> _notified = [];
     private readonly HashSet<int> _failingEventIds = [];

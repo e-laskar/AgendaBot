@@ -1,9 +1,9 @@
 using AgendaBot.Application.Ports;
 using AgendaBot.Domain;
 
-namespace AgendaBot.UnitTests.Application.Fakes;
+namespace AgendaBot.Testing.Fakes;
 
-internal sealed class InMemoryEventRepository : IEventRepository
+public sealed class InMemoryEventRepository : IEventRepository
 {
     private readonly Dictionary<int, AgendaEvent> _events = [];
     private int _nextId = 1;

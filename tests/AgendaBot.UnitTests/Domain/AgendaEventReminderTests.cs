@@ -1,5 +1,5 @@
 using AgendaBot.Domain;
-using AgendaBot.UnitTests.Builders;
+using AgendaBot.Testing.Builders;
 
 namespace AgendaBot.UnitTests.Domain;
 

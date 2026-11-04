@@ -1,8 +1,8 @@
 using AgendaBot.Domain;
 
-namespace AgendaBot.UnitTests.Builders;
+namespace AgendaBot.Testing.Builders;
 
-internal sealed class AnAgendaEvent
+public sealed class AnAgendaEvent
 {
     public static readonly DateTimeOffset DefaultNow = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
     public static readonly GuildId DefaultGuild = new(1);

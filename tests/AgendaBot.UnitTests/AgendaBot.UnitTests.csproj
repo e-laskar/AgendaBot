@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\AgendaBot.Host\AgendaBot.Host.csproj" />
     <ProjectReference Include="..\..\src\AgendaBot.Domain\AgendaBot.Domain.csproj" />
     <ProjectReference Include="..\..\src\AgendaBot.Application\AgendaBot.Application.csproj" />
+    <ProjectReference Include="..\AgendaBot.Testing\AgendaBot.Testing.csproj" />
   </ItemGroup>
 
 </Project>

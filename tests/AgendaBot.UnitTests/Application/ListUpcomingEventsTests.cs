@@ -1,7 +1,7 @@
 using AgendaBot.Application.UseCases;
 using AgendaBot.Domain;
-using AgendaBot.UnitTests.Application.Fakes;
-using AgendaBot.UnitTests.Builders;
+using AgendaBot.Testing.Fakes;
+using AgendaBot.Testing.Builders;
 using Microsoft.Extensions.Time.Testing;
 
 namespace AgendaBot.UnitTests.Application;
