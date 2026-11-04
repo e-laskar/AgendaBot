@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cas d'usage et ports. Ne dépend que du domaine. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\AgendaBot.Domain\AgendaBot.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

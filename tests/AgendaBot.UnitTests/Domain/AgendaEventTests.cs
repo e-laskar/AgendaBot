@@ -1,36 +1,30 @@
 using AgendaBot.Domain;
+using AgendaBot.UnitTests.Builders;
 
 namespace AgendaBot.UnitTests.Domain;
 
 public class AgendaEventTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
-    private static readonly EventTitle Title = EventTitle.Create("Réunion").Value;
-
-    private static Result<AgendaEvent> CreateEvent(
-        DateTimeOffset? startsAt = null,
-        TimeSpan? duration = null,
-        EventDescription? description = null) =>
-        AgendaEvent.Create(
-            new GuildId(1), new ChannelId(2), new UserId(3),
-            Title, description,
-            startsAt ?? Now.AddDays(1), duration,
-            Now);
+    private static readonly DateTimeOffset Now = AnAgendaEvent.DefaultNow;
 
     [Fact]
     public void Creates_event_with_given_values()
     {
-        var description = EventDescription.CreateOptional("Salle 2").Value;
         var startsAt = Now.AddDays(1);
 
-        var evt = CreateEvent(startsAt, TimeSpan.FromMinutes(90), description).Value;
+        var evt = new AnAgendaEvent()
+            .InGuild(new GuildId(1)).InChannel(new ChannelId(2)).CreatedBy(new UserId(3))
+            .Titled("Réunion").DescribedAs("Salle 2")
+            .StartingAt(startsAt).Lasting(TimeSpan.FromMinutes(90))
+            .Build();
 
         evt.ShouldSatisfyAllConditions(
+            () => evt.Id.ShouldBe(0),
             () => evt.GuildId.ShouldBe(new GuildId(1)),
             () => evt.ChannelId.ShouldBe(new ChannelId(2)),
             () => evt.CreatedBy.ShouldBe(new UserId(3)),
-            () => evt.Title.ShouldBe(Title),
-            () => evt.Description.ShouldBe(description),
+            () => evt.Title.Value.ShouldBe("Réunion"),
+            () => evt.Description!.Value.ShouldBe("Salle 2"),
             () => evt.StartsAt.ShouldBe(startsAt),
             () => evt.Duration.ShouldBe(TimeSpan.FromMinutes(90)));
     }
@@ -38,7 +32,7 @@ public class AgendaEventTests
     [Fact]
     public void New_event_has_no_reminder_sent()
     {
-        CreateEvent().Value.ReminderSent.ShouldBeFalse();
+        new AnAgendaEvent().Build().ReminderSent.ShouldBeFalse();
     }
 
     [Fact]
@@ -46,7 +40,7 @@ public class AgendaEventTests
     {
         var parisTime = new DateTimeOffset(2026, 12, 24, 20, 0, 0, TimeSpan.FromHours(1));
 
-        var evt = CreateEvent(startsAt: parisTime).Value;
+        var evt = new AnAgendaEvent().StartingAt(parisTime).Build();
 
         evt.StartsAt.Offset.ShouldBe(TimeSpan.Zero);
         evt.StartsAt.ShouldBe(parisTime); // même instant
@@ -55,13 +49,15 @@ public class AgendaEventTests
     [Fact]
     public void Rejects_start_in_the_past()
     {
-        CreateEvent(startsAt: Now.AddMinutes(-1)).Error.ShouldBe(DomainErrors.StartInPast);
+        new AnAgendaEvent().StartingAt(Now.AddMinutes(-1)).CreatedAt(Now)
+            .TryBuild().Error.ShouldBe(DomainErrors.StartInPast);
     }
 
     [Fact]
     public void Rejects_start_equal_to_now()
     {
-        CreateEvent(startsAt: Now).Error.ShouldBe(DomainErrors.StartInPast);
+        new AnAgendaEvent().StartingAt(Now).CreatedAt(Now)
+            .TryBuild().Error.ShouldBe(DomainErrors.StartInPast);
     }
 
     [Theory]
@@ -70,18 +66,19 @@ public class AgendaEventTests
     [InlineData(59)]
     public void Rejects_duration_shorter_than_one_minute(int seconds)
     {
-        CreateEvent(duration: TimeSpan.FromSeconds(seconds)).Error.ShouldBe(DomainErrors.InvalidDuration);
+        new AnAgendaEvent().Lasting(TimeSpan.FromSeconds(seconds))
+            .TryBuild().Error.ShouldBe(DomainErrors.InvalidDuration);
     }
 
     [Fact]
     public void Accepts_duration_of_one_minute()
     {
-        CreateEvent(duration: TimeSpan.FromMinutes(1)).IsSuccess.ShouldBeTrue();
+        new AnAgendaEvent().Lasting(TimeSpan.FromMinutes(1)).TryBuild().IsSuccess.ShouldBeTrue();
     }
 
     [Fact]
     public void Duration_is_optional()
     {
-        CreateEvent(duration: null).Value.Duration.ShouldBeNull();
+        new AnAgendaEvent().Lasting(null).Build().Duration.ShouldBeNull();
     }
 }

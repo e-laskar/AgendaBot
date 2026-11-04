@@ -1,0 +1,24 @@
+using AgendaBot.Application.Ports;
+using AgendaBot.Domain;
+
+namespace AgendaBot.UnitTests.Application.Fakes;
+
+/// <summary>Enregistre les rappels envoyés ; peut simuler une panne pour un événement donné.</summary>
+internal sealed class SpyReminderNotifier : IReminderNotifier
+{
+    private readonly List<AgendaEvent> _notified = [];
+    private readonly HashSet<int> _failingEventIds = [];
+
+    public IReadOnlyList<AgendaEvent> Notified => _notified;
+
+    public void FailFor(int eventId) => _failingEventIds.Add(eventId);
+
+    public Task NotifyAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    {
+        if (_failingEventIds.Contains(evt.Id))
+            throw new InvalidOperationException($"Envoi impossible pour l'événement {evt.Id}.");
+
+        _notified.Add(evt);
+        return Task.CompletedTask;
+    }
+}

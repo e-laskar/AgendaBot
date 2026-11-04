@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/AgendaBot.Application/AgendaBot.Application.csproj" />
     <Project Path="src/AgendaBot.Domain/AgendaBot.Domain.csproj" />
     <Project Path="src/AgendaBot.Host/AgendaBot.Host.csproj" />
   </Folder>

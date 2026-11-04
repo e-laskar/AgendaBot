@@ -6,7 +6,7 @@ public sealed class AgendaEvent
     private static readonly TimeSpan MinDuration = TimeSpan.FromMinutes(1);
 
     /// <summary>Attribué par la persistance ; 0 tant que l'événement n'est pas enregistré.</summary>
-    public int Id { get; private set; }
+    public int Id { get; }
 
     public GuildId GuildId { get; }
     public ChannelId ChannelId { get; }
@@ -21,17 +21,19 @@ public sealed class AgendaEvent
     public bool ReminderSent { get; private set; }
 
     private AgendaEvent(
-        GuildId guildId, ChannelId channelId, UserId createdBy,
+        int id, GuildId guildId, ChannelId channelId, UserId createdBy,
         EventTitle title, EventDescription? description,
-        DateTimeOffset startsAt, TimeSpan? duration)
+        DateTimeOffset startsAt, TimeSpan? duration, bool reminderSent)
     {
+        Id = id;
         GuildId = guildId;
         ChannelId = channelId;
         CreatedBy = createdBy;
         Title = title;
         Description = description;
-        StartsAt = startsAt;
+        StartsAt = startsAt.ToUniversalTime();
         Duration = duration;
+        ReminderSent = reminderSent;
     }
 
     public static Result<AgendaEvent> Create(
@@ -46,9 +48,19 @@ public sealed class AgendaEvent
             return DomainErrors.InvalidDuration;
 
         return new AgendaEvent(
-            guildId, channelId, createdBy, title, description,
-            startsAt.ToUniversalTime(), duration);
+            id: 0, guildId, channelId, createdBy, title, description,
+            startsAt, duration, reminderSent: false);
     }
+
+    /// <summary>
+    /// Recharge un événement déjà enregistré, tel qu'il a été persisté.
+    /// Les règles de création ne s'appliquent pas (la date peut être passée) : réservé à la persistance.
+    /// </summary>
+    public static AgendaEvent Restore(
+        int id, GuildId guildId, ChannelId channelId, UserId createdBy,
+        EventTitle title, EventDescription? description,
+        DateTimeOffset startsAt, TimeSpan? duration, bool reminderSent) =>
+        new(id, guildId, channelId, createdBy, title, description, startsAt, duration, reminderSent);
 
     /// <summary>
     /// Vrai si le rappel n'a pas encore été envoyé et que l'événement, pas encore commencé,
