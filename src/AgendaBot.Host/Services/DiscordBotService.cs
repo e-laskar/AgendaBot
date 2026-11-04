@@ -9,10 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace AgendaBot.Services;
 
-/// <summary>
-/// Connecte le bot à Discord, enregistre les slash commands et route les interactions.
-/// </summary>
-public class DiscordBotService : IHostedService
+public sealed class DiscordBotService : IHostedService
 {
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactions;

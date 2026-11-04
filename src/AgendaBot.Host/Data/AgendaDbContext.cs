@@ -1,28 +1,25 @@
-using AgendaBot.Models;
+using AgendaBot.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AgendaBot.Data;
 
-public class AgendaDbContext : DbContext
+public class AgendaDbContext(DbContextOptions<AgendaDbContext> options) : DbContext(options)
 {
-    public AgendaDbContext(DbContextOptions<AgendaDbContext> options) : base(options) { }
-
-    public DbSet<AgendaEvent> Events => Set<AgendaEvent>();
+    public DbSet<EventRecord> Events => Set<EventRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // SQLite ne conserve pas DateTime.Kind : on force UTC à la relecture (sans effet sous PostgreSQL / timestamptz).
-        var utcConverter = new ValueConverter<DateTime, DateTime>(
+        var readBackAsUtc = new ValueConverter<DateTime, DateTime>(
             v => v,
             v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
-        modelBuilder.Entity<AgendaEvent>(e =>
+        modelBuilder.Entity<EventRecord>(e =>
         {
-            e.Property(x => x.Title).HasMaxLength(100).IsRequired();
-            e.Property(x => x.Description).HasMaxLength(1000);
-            e.Property(x => x.StartsAtUtc).HasConversion(utcConverter);
-            e.Property(x => x.CreatedAtUtc).HasConversion(utcConverter);
+            e.Property(x => x.Title).HasMaxLength(EventTitle.MaxLength).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(EventDescription.MaxLength);
+            e.Property(x => x.StartsAtUtc).HasConversion(readBackAsUtc);
+            e.Property(x => x.CreatedAtUtc).HasConversion(readBackAsUtc);
             e.HasIndex(x => new { x.GuildId, x.StartsAtUtc });
         });
     }

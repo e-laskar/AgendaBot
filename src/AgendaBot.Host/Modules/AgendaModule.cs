@@ -1,7 +1,7 @@
 using System.Globalization;
+using AgendaBot.Application.UseCases;
 using AgendaBot.Configuration;
-using AgendaBot.Models;
-using AgendaBot.Services;
+using AgendaBot.Domain;
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;
@@ -10,118 +10,109 @@ namespace AgendaBot.Modules;
 
 [Group("agenda", "Gestion de l'agenda du serveur")]
 [CommandContextType(InteractionContextType.Guild)]
-public class AgendaModule : InteractionModuleBase<SocketInteractionContext>
+public sealed class AgendaModule(
+    AddEvent addEvent,
+    ListUpcomingEvents listUpcomingEvents,
+    GetEvent getEvent,
+    DeleteEvent deleteEvent,
+    IOptions<BotOptions> options) : InteractionModuleBase<SocketInteractionContext>
 {
-    private const string DateFormat = "dd/MM/yyyy HH:mm";
+    private const string UserDateFormat = "dd/MM/yyyy HH:mm";
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
-    private readonly IAgendaService _agenda;
-    private readonly TimeZoneInfo _timeZone;
+    private readonly TimeZoneInfo _userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(options.Value.TimeZone);
 
-    public AgendaModule(IAgendaService agenda, IOptions<BotOptions> options)
-    {
-        _agenda = agenda;
-        _timeZone = TimeZoneInfo.FindSystemTimeZoneById(options.Value.TimeZone);
-    }
+    private GuildId CurrentGuild => new(Context.Guild.Id);
 
     [SlashCommand("ajouter", "Ajoute un événement à l'agenda")]
     public async Task AddAsync(
-        [Summary("titre", "Titre de l'événement"), MaxLength(100)] string title,
+        [Summary("titre", "Titre de l'événement"), MaxLength(EventTitle.MaxLength)] string title,
         [Summary("date", "Date et heure, format jj/mm/aaaa hh:mm")] string date,
-        [Summary("description", "Description optionnelle"), MaxLength(1000)] string? description = null,
+        [Summary("description", "Description optionnelle"), MaxLength(EventDescription.MaxLength)] string? description = null,
         [Summary("duree", "Durée en minutes"), MinValue(1)] int? durationMinutes = null)
     {
-        if (!DateTime.TryParseExact(date, DateFormat, French, DateTimeStyles.None, out var localDate))
+        if (!TryParseUserDate(date, out var startsAt))
         {
-            await RespondAsync($"❌ Date invalide. Format attendu : `{DateFormat}` (ex. `24/12/2026 20:00`).", ephemeral: true);
+            await RespondWithErrorAsync($"Date invalide. Format attendu : `{UserDateFormat}` (ex. `24/12/2026 20:00`).");
             return;
         }
 
-        var startsAtUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(localDate, DateTimeKind.Unspecified), _timeZone);
-        if (startsAtUtc <= DateTime.UtcNow)
+        var result = await addEvent.HandleAsync(new AddEventCommand(
+            CurrentGuild,
+            new ChannelId(Context.Channel.Id),
+            new UserId(Context.User.Id),
+            title,
+            description,
+            startsAt,
+            durationMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : null));
+
+        if (!result.IsSuccess)
         {
-            await RespondAsync("❌ La date doit être dans le futur.", ephemeral: true);
+            await RespondWithErrorAsync(result.Error);
             return;
         }
 
-        var evt = await _agenda.AddEventAsync(new AgendaEvent
-        {
-            GuildId = Context.Guild.Id,
-            ChannelId = Context.Channel.Id,
-            CreatedByUserId = Context.User.Id,
-            Title = title,
-            Description = description,
-            StartsAtUtc = startsAtUtc,
-            DurationMinutes = durationMinutes
-        });
-
-        await RespondAsync("✅ Événement ajouté !", embed: BuildEventEmbed(evt));
+        await RespondAsync("✅ Événement ajouté !", embed: AgendaEventEmbeds.Details(result.Value));
     }
 
     [SlashCommand("lister", "Affiche les prochains événements")]
     public async Task ListAsync(
         [Summary("nombre", "Nombre d'événements à afficher"), MinValue(1), MaxValue(25)] int count = 10)
     {
-        var events = await _agenda.GetUpcomingEventsAsync(Context.Guild.Id, count);
+        var events = await listUpcomingEvents.HandleAsync(CurrentGuild, count);
         if (events.Count == 0)
         {
             await RespondAsync("📭 Aucun événement à venir.", ephemeral: true);
             return;
         }
 
-        var embed = new EmbedBuilder()
-            .WithTitle("📅 Prochains événements")
-            .WithColor(Color.Blue);
-
-        foreach (var evt in events)
-        {
-            var start = ToUnix(evt.StartsAtUtc);
-            embed.AddField($"#{evt.Id} · {evt.Title}", $"<t:{start}:F> (<t:{start}:R>)");
-        }
-
-        await RespondAsync(embed: embed.Build());
+        await RespondAsync(embed: AgendaEventEmbeds.UpcomingList(events));
     }
 
     [SlashCommand("voir", "Affiche le détail d'un événement")]
     public async Task ShowAsync([Summary("id", "Identifiant de l'événement")] int id)
     {
-        var evt = await _agenda.GetEventAsync(Context.Guild.Id, id);
-        if (evt is null)
+        var result = await getEvent.HandleAsync(CurrentGuild, id);
+        if (!result.IsSuccess)
         {
-            await RespondAsync($"❌ Événement #{id} introuvable.", ephemeral: true);
+            await RespondWithErrorAsync(result.Error);
             return;
         }
 
-        await RespondAsync(embed: BuildEventEmbed(evt));
+        await RespondAsync(embed: AgendaEventEmbeds.Details(result.Value));
     }
 
     [SlashCommand("supprimer", "Supprime un événement")]
     [RequireUserPermission(GuildPermission.ManageEvents)]
     public async Task DeleteAsync([Summary("id", "Identifiant de l'événement")] int id)
     {
-        var deleted = await _agenda.DeleteEventAsync(Context.Guild.Id, id);
-        await RespondAsync(
-            deleted ? $"🗑️ Événement #{id} supprimé." : $"❌ Événement #{id} introuvable.",
-            ephemeral: !deleted);
+        var result = await deleteEvent.HandleAsync(CurrentGuild, id);
+        if (!result.IsSuccess)
+        {
+            await RespondWithErrorAsync(result.Error);
+            return;
+        }
+
+        await RespondAsync($"🗑️ Événement #{id} « {result.Value.Title} » supprimé.");
     }
 
-    private static Embed BuildEventEmbed(AgendaEvent evt)
+    private bool TryParseUserDate(string text, out DateTimeOffset startsAt)
     {
-        var start = ToUnix(evt.StartsAtUtc);
-        var embed = new EmbedBuilder()
-            .WithTitle($"📌 {evt.Title}")
-            .WithDescription(evt.Description ?? "_Pas de description_")
-            .WithColor(Color.Green)
-            .AddField("Début", $"<t:{start}:F>\n<t:{start}:R>", inline: true)
-            .AddField("Créé par", MentionUtils.MentionUser(evt.CreatedByUserId), inline: true)
-            .WithFooter($"ID : {evt.Id}");
+        startsAt = default;
+        if (!DateTime.TryParseExact(text, UserDateFormat, French, DateTimeStyles.None, out var parsed))
+            return false;
 
-        if (evt.DurationMinutes is { } duration)
-            embed.AddField("Durée", TimeSpan.FromMinutes(duration).ToString(@"hh\hmm"), inline: true);
+        var localDate = DateTime.SpecifyKind(parsed, DateTimeKind.Unspecified);
+        if (IsSkippedByDaylightSavingTime(localDate))
+            return false;
 
-        return embed.Build();
+        startsAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(localDate, _userTimeZone));
+        return true;
     }
 
-    // Les timestamps Discord <t:...> s'affichent automatiquement dans le fuseau de chaque utilisateur.
-    private static long ToUnix(DateTime utc) => new DateTimeOffset(utc, TimeSpan.Zero).ToUnixTimeSeconds();
+    private bool IsSkippedByDaylightSavingTime(DateTime localDate) => _userTimeZone.IsInvalidTime(localDate);
+
+    private Task RespondWithErrorAsync(Error error) => RespondWithErrorAsync(error.Message);
+
+    private Task RespondWithErrorAsync(string message) => RespondAsync($"❌ {message}", ephemeral: true);
 }

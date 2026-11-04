@@ -105,18 +105,25 @@ docker run -d --name agendabot --restart unless-stopped \
 
 ## Structure
 
+Architecture hexagonale : les dépendances pointent vers le domaine.
+
 ```
 AgendaBot.slnx
-Directory.Build.props         Propriétés communes (net10.0, nullable, warnings = erreurs)
-Directory.Packages.props      Versions des packages NuGet (gestion centralisée)
-src/AgendaBot.Host/
-  Program.cs                  Host, DI, création de la base
-  Configuration/              Options (token, fuseau horaire, rappels) et chargement du .env
-  Models/AgendaEvent.cs       Entité événement
-  Data/AgendaDbContext.cs     DbContext EF Core
-  Services/                   Accès aux données, connexion Discord, rappels
-  Modules/AgendaModule.cs     Slash commands /agenda
-tests/AgendaBot.UnitTests/    Tests unitaires (xUnit v3 + Shouldly)
+Directory.Build.props            Propriétés communes (net10.0, nullable, warnings = erreurs)
+Directory.Packages.props         Versions des packages NuGet (gestion centralisée)
+src/
+  AgendaBot.Domain/              Cœur métier, sans dépendance
+    AgendaEvent.cs               Entité : création validée, logique de rappel
+    EventTitle.cs, EventDescription.cs, DiscordIds.cs   Value objects
+    Result.cs, Error.cs, DomainErrors.cs                Erreurs métier sans exceptions
+  AgendaBot.Application/         Cas d'usage et ports
+    Ports/                       IEventRepository, IReminderNotifier
+    UseCases/                    AddEvent, ListUpcomingEvents, GetEvent, DeleteEvent, SendDueReminders
+  AgendaBot.Host/                Adaptateurs et composition
+    Program.cs, AgendaBotSetup.cs  Démarrage et enregistrement des services
+    Data/                        Adaptateur EF Core (SQLite / PostgreSQL)
+    Modules/                     Slash commands /agenda
+    Services/                    Connexion Discord, envoi des rappels, worker
+    Configuration/               Options et chargement du .env
+tests/AgendaBot.UnitTests/       Tests unitaires (xUnit v3 + Shouldly, fakes en mémoire)
 ```
-
-Migration en cours vers une architecture hexagonale (Domain / Application / adaptateurs).

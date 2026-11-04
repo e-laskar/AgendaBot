@@ -1,6 +1,6 @@
-namespace AgendaBot.Models;
+namespace AgendaBot.Data;
 
-public class AgendaEvent
+public class EventRecord
 {
     public int Id { get; set; }
 
