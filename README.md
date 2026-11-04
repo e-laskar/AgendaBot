@@ -56,8 +56,7 @@ en remplaçant `:` par `__` (double underscore) :
 | `Discord__DevGuildId` | vide | Serveur de test pour l'enregistrement instantané des commandes |
 | `Discord__TimeZone` | `Europe/Paris` | Fuseau horaire des dates saisies (ID IANA) |
 | `Discord__ReminderMinutesBefore` | `15` | Délai du rappel avant l'événement (> 0) |
-| `Database__Provider` | `Sqlite` | `Sqlite` ou `Postgres` |
-| `ConnectionStrings__Agenda` | `Data Source=agenda.db` | Chaîne de connexion (SQLite ou Npgsql) |
+| `ConnectionStrings__Agenda` | — (obligatoire) | Chaîne de connexion PostgreSQL (Npgsql) |
 | `DOTNET_ENVIRONMENT` | `Production` | `Development` active les user-secrets |
 
 ### Fichier `.env`
@@ -84,7 +83,7 @@ invalide font échouer le lancement avec un message explicite.
 `compose.yaml` lance deux services :
 
 - **`db`** : PostgreSQL 17 (volume `pg-data`, non exposé sur l'hôte, healthcheck `pg_isready`) ;
-- **`agendabot`** : le bot, démarré une fois la base prête, avec `Database__Provider=Postgres`.
+- **`agendabot`** : le bot, démarré une fois la base prête.
 
 ```bash
 cp .env.example .env        # renseigner Discord__Token et POSTGRES_PASSWORD
@@ -98,22 +97,15 @@ Le fichier `.env` n'est pas copié dans l'image (`.dockerignore`) : il est injec
 
 Accès à la base : `docker compose exec db psql -U agenda agenda`.
 
-Sans Compose, l'image fonctionne aussi seule avec SQLite :
+### Base de données en dev local
+
+Le bot utilise uniquement PostgreSQL. Pour le lancer hors Docker Compose, démarrer une base locale :
 
 ```bash
-docker build -t agendabot .
-docker run -d --name agendabot --restart unless-stopped \
-  -e Discord__Token=<TOKEN> \
-  -v agenda-data:/data \
-  agendabot
+docker run -d --name agenda-db -p 5432:5432 -e POSTGRES_DB=agenda -e POSTGRES_USER=agenda -e POSTGRES_PASSWORD=changeme postgres:17-alpine
 ```
 
-### Fournisseur de base de données
-
-`Database__Provider` vaut `Sqlite` (défaut) ou `Postgres` ; `ConnectionStrings__Agenda` doit correspondre.
-
-> Le binaire SQLite embarqué requiert glibc ≥ 2.34 : il ne se charge pas sous Ubuntu 20.04 (glibc 2.31).
-> Sur ces systèmes, utiliser Docker ou Postgres en local.
+La chaîne de connexion correspondante est déjà dans `.env.example`.
 
 ## Structure
 
@@ -131,7 +123,7 @@ src/
   AgendaBot.Application/         Cas d'usage et ports
     Ports/                       IEventRepository, IReminderNotifier
     UseCases/                    AddEvent, ListUpcomingEvents, GetEvent, DeleteEvent, SendDueReminders
-  AgendaBot.Persistence/         Adaptateur EF Core (SQLite / PostgreSQL)
+  AgendaBot.Persistence/         Adaptateur EF Core PostgreSQL
   AgendaBot.Host/                Adaptateurs Discord et composition
     Program.cs, AgendaBotSetup.cs  Démarrage et enregistrement des services
     Modules/                     Slash commands /agenda

@@ -5,9 +5,6 @@ obj/
 .vs/
 *.user
 *.DotSettings.user
-*.db
-*.db-shm
-*.db-wal
 # Secrets : jamais dans l'image, à passer à l'exécution (env / env_file)
 .env
 appsettings.*.local.json

@@ -34,8 +34,7 @@ internal static class AgendaBotSetup
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("Chaîne de connexion manquante : définir ConnectionStrings__Agenda.");
 
-        var provider = configuration["Database:Provider"] ?? "Sqlite";
-        return services.AddAgendaPersistence(provider, connectionString);
+        return services.AddAgendaPersistence(connectionString);
     }
 
     public static IServiceCollection AddAgendaUseCases(this IServiceCollection services)

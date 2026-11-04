@@ -6,10 +6,10 @@ namespace AgendaBot.Persistence;
 
 public static class PersistenceSetup
 {
-    public static IServiceCollection AddAgendaPersistence(
-        this IServiceCollection services, string provider, string connectionString)
+    public static IServiceCollection AddAgendaPersistence(this IServiceCollection services, string connectionString)
     {
-        services.AddDbContextFactory<AgendaDbContext>(options => UseProvider(options, provider, connectionString));
+        services.AddDbContextFactory<AgendaDbContext>(options =>
+            options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure()));
         services.AddSingleton<IEventRepository, EfEventRepository>();
         return services;
     }
@@ -19,21 +19,5 @@ public static class PersistenceSetup
         var dbFactory = services.GetRequiredService<IDbContextFactory<AgendaDbContext>>();
         await using var db = await dbFactory.CreateDbContextAsync();
         await db.Database.EnsureCreatedAsync();
-    }
-
-    private static void UseProvider(DbContextOptionsBuilder options, string provider, string connectionString)
-    {
-        switch (provider.ToLowerInvariant())
-        {
-            case "sqlite":
-                options.UseSqlite(connectionString);
-                break;
-            case "postgres" or "postgresql" or "npgsql":
-                options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure());
-                break;
-            default:
-                throw new InvalidOperationException(
-                    $"Database__Provider inconnu : « {provider} » (valeurs possibles : Sqlite, Postgres).");
-        }
     }
 }

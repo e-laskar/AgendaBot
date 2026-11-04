@@ -19,12 +19,7 @@ RUN dotnet publish src/AgendaBot.Host/AgendaBot.Host.csproj -c Release -o /app -
 FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
 WORKDIR /app
 
-# Répertoire persistant pour la base SQLite, appartenant à l'utilisateur non-root "app" de l'image
-RUN mkdir -p /data && chown app:app /data
-VOLUME /data
-
-ENV DOTNET_ENVIRONMENT=Production \
-    ConnectionStrings__Agenda="Data Source=/data/agenda.db"
+ENV DOTNET_ENVIRONMENT=Production
 
 COPY --from=build /app .
 

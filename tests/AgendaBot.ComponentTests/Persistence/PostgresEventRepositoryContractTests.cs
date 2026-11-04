@@ -13,7 +13,7 @@ public sealed class PostgresEventRepositoryContractTests(PostgresContainer postg
     protected override async Task<IEventRepository> CreateEmptyRepositoryAsync()
     {
         var services = new ServiceCollection()
-            .AddAgendaPersistence("Postgres", postgres.ConnectionStringToNewDatabase())
+            .AddAgendaPersistence(postgres.ConnectionStringToNewDatabase())
             .BuildServiceProvider();
         _providers.Add(services);
 

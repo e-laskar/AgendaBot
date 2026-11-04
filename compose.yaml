@@ -30,7 +30,6 @@ services:
     environment:
       # Prioritaires sur env_file : le bot utilise toujours la base du service "db"
       DOTNET_ENVIRONMENT: Production
-      Database__Provider: Postgres
       ConnectionStrings__Agenda: Host=db;Port=5432;Database=${POSTGRES_DB:-agenda};Username=${POSTGRES_USER:-agenda};Password=${POSTGRES_PASSWORD}
 
 volumes:
