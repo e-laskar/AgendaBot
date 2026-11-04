@@ -26,8 +26,8 @@ public sealed class SendDueReminders(
         {
             try
             {
-                await NotifyAndMarkAsRemindedAsync(evt, cancellationToken);
-                sent++;
+                if (await ClaimThenNotifyAsync(evt, cancellationToken))
+                    sent++;
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
@@ -45,10 +45,20 @@ public sealed class SendDueReminders(
         return candidates.Where(evt => evt.IsReminderDue(now, settings.Window));
     }
 
-    private async Task NotifyAndMarkAsRemindedAsync(AgendaEvent evt, CancellationToken cancellationToken)
+    private async Task<bool> ClaimThenNotifyAsync(AgendaEvent evt, CancellationToken cancellationToken)
     {
-        await notifier.NotifyAsync(evt, cancellationToken);
-        evt.MarkReminderSent();
-        await repository.SaveReminderSentAsync(evt, cancellationToken);
+        if (!await repository.TryClaimReminderAsync(evt, cancellationToken))
+            return false;
+
+        try
+        {
+            await notifier.NotifyAsync(evt, cancellationToken);
+            return true;
+        }
+        catch
+        {
+            await repository.ReleaseReminderClaimAsync(evt, CancellationToken.None);
+            throw;
+        }
     }
 }

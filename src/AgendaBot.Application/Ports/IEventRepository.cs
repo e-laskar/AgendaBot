@@ -14,7 +14,9 @@ public interface IEventRepository
     Task<IReadOnlyList<AgendaEvent>> GetWithoutReminderStartingBetweenAsync(
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default);
 
-    Task SaveReminderSentAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
+    Task<bool> TryClaimReminderAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
+
+    Task ReleaseReminderClaimAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
 }

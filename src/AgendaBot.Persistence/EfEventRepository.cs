@@ -48,12 +48,21 @@ public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFacto
         return records.Select(r => r.ToDomain()).ToList();
     }
 
-    public async Task SaveReminderSentAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    public async Task<bool> TryClaimReminderAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var claimedRows = await db.Events
+            .Where(e => e.Id == evt.Id && !e.ReminderSent)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.ReminderSent, true), cancellationToken);
+        return claimedRows == 1;
+    }
+
+    public async Task ReleaseReminderClaimAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         await db.Events
             .Where(e => e.Id == evt.Id)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.ReminderSent, evt.ReminderSent), cancellationToken);
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.ReminderSent, false), cancellationToken);
     }
 
     public async Task DeleteAsync(AgendaEvent evt, CancellationToken cancellationToken = default)

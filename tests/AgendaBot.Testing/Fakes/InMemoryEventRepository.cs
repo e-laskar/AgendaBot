@@ -6,6 +6,8 @@ namespace AgendaBot.Testing.Fakes;
 public sealed class InMemoryEventRepository : IEventRepository
 {
     private readonly Dictionary<int, AgendaEvent> _events = [];
+    private readonly HashSet<int> _claimedByAnotherInstanceIds = [];
+    private readonly HashSet<int> _failingClaimIds = [];
     private int _nextId = 1;
 
     public IReadOnlyCollection<AgendaEvent> All => _events.Values.Select(Copy).ToList();
@@ -40,13 +42,33 @@ public sealed class InMemoryEventRepository : IEventRepository
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default) =>
         Result(_events.Values.Where(e => !e.ReminderSent && e.StartsAt > after && e.StartsAt <= until));
 
-    public Task SaveReminderSentAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    public Task<bool> TryClaimReminderAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {
-        if (!_events.ContainsKey(evt.Id))
-            throw new InvalidOperationException($"Événement {evt.Id} inexistant.");
-        _events[evt.Id] = Copy(evt);
+        if (_failingClaimIds.Contains(evt.Id))
+            throw new InvalidOperationException($"Réservation impossible pour l'événement {evt.Id}.");
+        if (_claimedByAnotherInstanceIds.Remove(evt.Id))
+            ClaimStored(evt.Id);
+
+        if (!_events.TryGetValue(evt.Id, out var stored) || stored.ReminderSent)
+            return Task.FromResult(false);
+
+        ClaimStored(evt.Id);
+        return Task.FromResult(true);
+    }
+
+    public Task ReleaseReminderClaimAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    {
+        if (_events.TryGetValue(evt.Id, out var stored))
+            _events[evt.Id] = CopyWithReminderSent(stored, reminderSent: false);
         return Task.CompletedTask;
     }
+
+    public void AnotherInstanceClaimsBeforeUs(int eventId) => _claimedByAnotherInstanceIds.Add(eventId);
+
+    public void FailClaimsFor(int eventId) => _failingClaimIds.Add(eventId);
+
+    private void ClaimStored(int eventId) =>
+        _events[eventId] = CopyWithReminderSent(_events[eventId], reminderSent: true);
 
     public Task DeleteAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {
@@ -63,4 +85,9 @@ public sealed class InMemoryEventRepository : IEventRepository
         AgendaEvent.RestoreFromPersistence(
             id, evt.GuildId, evt.ChannelId, evt.CreatedBy, evt.Title, evt.Description,
             evt.StartsAt, evt.Duration, evt.ReminderSent);
+
+    private static AgendaEvent CopyWithReminderSent(AgendaEvent evt, bool reminderSent) =>
+        AgendaEvent.RestoreFromPersistence(
+            evt.Id, evt.GuildId, evt.ChannelId, evt.CreatedBy, evt.Title, evt.Description,
+            evt.StartsAt, evt.Duration, reminderSent);
 }

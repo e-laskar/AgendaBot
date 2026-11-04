@@ -115,4 +115,43 @@ public class SendDueRemindersTests
         _notifier.Notified.ShouldHaveSingleItem().Id.ShouldBe(1);
         _repository.All.ShouldHaveSingleItem().ReminderSent.ShouldBeTrue();
     }
+
+    [Fact]
+    public async Task Does_not_notify_an_event_claimed_by_another_instance_in_the_meantime()
+    {
+        _repository.Seed(new AnAgendaEvent().StartingAt(Now.AddMinutes(10)).BuildPersisted(1));
+        _repository.AnotherInstanceClaimsBeforeUs(1);
+
+        var report = await CreateUseCase().HandleAsync();
+
+        _notifier.Notified.ShouldBeEmpty();
+        report.Sent.ShouldBe(0);
+        report.Failures.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Does_not_notify_when_the_reminder_cannot_be_claimed()
+    {
+        _repository.Seed(new AnAgendaEvent().StartingAt(Now.AddMinutes(10)).BuildPersisted(1));
+        _repository.FailClaimsFor(1);
+
+        var report = await CreateUseCase().HandleAsync();
+
+        _notifier.Notified.ShouldBeEmpty();
+        report.Failures.ShouldHaveSingleItem().Event.Id.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task A_reminder_interrupted_by_shutdown_is_sent_after_restart()
+    {
+        _repository.Seed(new AnAgendaEvent().StartingAt(Now.AddMinutes(10)).BuildPersisted(1));
+        _notifier.InterruptByShutdownFor(1);
+        await Should.ThrowAsync<OperationCanceledException>(() => CreateUseCase().HandleAsync());
+
+        _notifier.Recover();
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await CreateUseCase().HandleAsync();
+
+        _notifier.Notified.ShouldHaveSingleItem().Id.ShouldBe(1);
+    }
 }

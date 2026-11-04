@@ -142,8 +142,7 @@ public abstract class EventRepositoryContract
         var repository = await CreateEmptyRepositoryAsync();
         var reminded = await repository.AddAsync(AnEvent().StartingAt(T0.AddMinutes(5)).Build());
         var notReminded = await repository.AddAsync(AnEvent().StartingAt(T0.AddMinutes(5)).Build());
-        reminded.MarkReminderSent();
-        await repository.SaveReminderSentAsync(reminded);
+        await repository.TryClaimReminderAsync(reminded);
 
         var candidates = await repository.GetWithoutReminderStartingBetweenAsync(T0, T0.AddMinutes(15));
 
@@ -163,15 +162,51 @@ public abstract class EventRepositoryContract
     }
 
     [Fact]
-    public async Task Saved_reminder_status_is_read_back()
+    public async Task Claimed_reminder_is_read_back_as_sent()
     {
         var repository = await CreateEmptyRepositoryAsync();
         var added = await repository.AddAsync(AnEvent().Build());
 
-        added.MarkReminderSent();
-        await repository.SaveReminderSentAsync(added);
+        (await repository.TryClaimReminderAsync(added)).ShouldBeTrue();
 
         (await repository.GetAsync(Guild, added.Id))!.ReminderSent.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Reminder_can_be_claimed_only_once()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var added = await repository.AddAsync(AnEvent().Build());
+
+        var firstClaim = await repository.TryClaimReminderAsync(added);
+        var secondClaim = await repository.TryClaimReminderAsync(added);
+
+        firstClaim.ShouldBeTrue();
+        secondClaim.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Released_reminder_becomes_a_candidate_again()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var added = await repository.AddAsync(AnEvent().StartingAt(T0.AddMinutes(5)).Build());
+        await repository.TryClaimReminderAsync(added);
+
+        await repository.ReleaseReminderClaimAsync(added);
+
+        (await repository.GetWithoutReminderStartingBetweenAsync(T0, T0.AddMinutes(15)))
+            .ShouldHaveSingleItem().Id.ShouldBe(added.Id);
+    }
+
+    [Fact]
+    public async Task Released_reminder_can_be_claimed_again()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var added = await repository.AddAsync(AnEvent().Build());
+        await repository.TryClaimReminderAsync(added);
+        await repository.ReleaseReminderClaimAsync(added);
+
+        (await repository.TryClaimReminderAsync(added)).ShouldBeTrue();
     }
 
     [Fact]
