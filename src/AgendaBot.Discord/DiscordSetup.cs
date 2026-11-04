@@ -25,6 +25,7 @@ public static class DiscordSetup
             new InteractionServiceConfig { LogLevel = LogSeverity.Info }));
         services.AddSingleton(sp => new UserDateParser(
             TimeZoneInfo.FindSystemTimeZoneById(sp.GetRequiredService<IOptions<BotOptions>>().Value.TimeZone)));
+        services.AddSingleton<IChannelMessenger, DiscordChannelMessenger>();
         services.AddSingleton<IReminderNotifier, DiscordReminderNotifier>();
         services.AddHostedService<DiscordBotService>();
         services.AddHostedService<ReminderWorker>();
