@@ -1,8 +1,7 @@
 using AgendaBot.Domain;
-using AgendaBot.Services;
 using Discord;
 
-namespace AgendaBot.Modules;
+namespace AgendaBot.Discord.Presentation;
 
 internal static class AgendaEventEmbeds
 {

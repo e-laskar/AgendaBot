@@ -1,11 +1,6 @@
-using AgendaBot.Application.Ports;
 using AgendaBot.Application.UseCases;
-using AgendaBot.Configuration;
+using AgendaBot.Discord;
 using AgendaBot.Persistence;
-using AgendaBot.Services;
-using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -14,20 +9,6 @@ namespace AgendaBot;
 
 internal static class AgendaBotSetup
 {
-    public static IServiceCollection AddValidatedBotOptions(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddOptions<BotOptions>()
-            .Bind(configuration.GetSection(BotOptions.SectionName))
-            .Validate(o => !string.IsNullOrWhiteSpace(o.Token),
-                "Token Discord manquant : définir Discord__Token (variable d'environnement / .env) ou Discord:Token (user-secrets).")
-            .Validate(o => o.ReminderMinutesBefore > 0,
-                "Discord__ReminderMinutesBefore doit être strictement positif.")
-            .Validate(o => TimeZoneInfo.TryFindSystemTimeZoneById(o.TimeZone, out _),
-                "Discord__TimeZone n'est pas un fuseau horaire reconnu (ex. Europe/Paris).")
-            .ValidateOnStart();
-        return services;
-    }
-
     public static IServiceCollection AddAgendaDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("Agenda");
@@ -49,23 +30,4 @@ internal static class AgendaBotSetup
         services.AddSingleton<SendDueReminders>();
         return services;
     }
-
-    public static IServiceCollection AddDiscordBot(this IServiceCollection services)
-    {
-        services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
-        {
-            GatewayIntents = GatewayIntents.Guilds,
-            LogLevel = LogSeverity.Info
-        }));
-        services.AddSingleton(sp => new InteractionService(
-            sp.GetRequiredService<DiscordSocketClient>(),
-            new InteractionServiceConfig { LogLevel = LogSeverity.Info }));
-        services.AddSingleton<IReminderNotifier, DiscordReminderNotifier>();
-        services.AddHostedService<DiscordBotService>();
-        services.AddHostedService<ReminderWorker>();
-        return services;
-    }
-
-    public static void FailFastOnInvalidBotOptions(this IServiceProvider services) =>
-        _ = services.GetRequiredService<IOptions<BotOptions>>().Value;
 }

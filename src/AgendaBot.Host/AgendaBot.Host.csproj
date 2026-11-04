@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
@@ -15,6 +14,7 @@
     <ProjectReference Include="..\AgendaBot.Domain\AgendaBot.Domain.csproj" />
     <ProjectReference Include="..\AgendaBot.Application\AgendaBot.Application.csproj" />
     <ProjectReference Include="..\AgendaBot.Persistence\AgendaBot.Persistence.csproj" />
+    <ProjectReference Include="..\AgendaBot.Discord\AgendaBot.Discord.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AgendaBot.ComponentTests.Persistence;
 
+[Collection(RequiresPostgres.Name)]
 public sealed class PostgresEventRepositoryContractTests(PostgresContainer postgres)
     : EventRepositoryContract, IAsyncDisposable
 {

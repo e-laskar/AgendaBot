@@ -1,4 +1,4 @@
-namespace AgendaBot.Services;
+namespace AgendaBot.Discord.Presentation;
 
 internal static class DiscordTimestamps
 {

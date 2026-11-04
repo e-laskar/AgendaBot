@@ -4,7 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace AgendaBot.Services;
+namespace AgendaBot.Discord.Reminders;
 
 public sealed class ReminderWorker(
     DiscordSocketClient client,

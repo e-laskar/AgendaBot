@@ -1,10 +1,11 @@
 using AgendaBot.Application.Ports;
+using AgendaBot.Discord.Presentation;
 using AgendaBot.Domain;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 
-namespace AgendaBot.Services;
+namespace AgendaBot.Discord.Reminders;
 
 public sealed class DiscordReminderNotifier(DiscordSocketClient client, ILogger<DiscordReminderNotifier> logger)
     : IReminderNotifier

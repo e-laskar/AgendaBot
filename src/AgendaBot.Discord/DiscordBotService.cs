@@ -1,5 +1,4 @@
-using System.Reflection;
-using AgendaBot.Configuration;
+using AgendaBot.Discord.Commands;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -7,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace AgendaBot.Services;
+namespace AgendaBot.Discord;
 
 public sealed class DiscordBotService : IHostedService
 {
@@ -39,7 +38,7 @@ public sealed class DiscordBotService : IHostedService
         _client.InteractionCreated += HandleInteractionAsync;
         _interactions.SlashCommandExecuted += OnSlashCommandExecutedAsync;
 
-        await _interactions.AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
+        await _interactions.AddModulesAsync(typeof(AgendaModule).Assembly, _services);
 
         await _client.LoginAsync(TokenType.Bot, _options.Token);
         await _client.StartAsync();

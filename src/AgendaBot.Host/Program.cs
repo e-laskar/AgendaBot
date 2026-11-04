@@ -1,5 +1,6 @@
 using AgendaBot;
 using AgendaBot.Configuration;
+using AgendaBot.Discord;
 using AgendaBot.Persistence;
 using Microsoft.Extensions.Hosting;
 
@@ -8,10 +9,9 @@ DotEnv.Load();
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services
-    .AddValidatedBotOptions(builder.Configuration)
+    .AddDiscordBot(builder.Configuration)
     .AddAgendaDatabase(builder.Configuration)
-    .AddAgendaUseCases()
-    .AddDiscordBot();
+    .AddAgendaUseCases();
 
 var host = builder.Build();
 

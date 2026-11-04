@@ -1,4 +1,4 @@
-namespace AgendaBot.Configuration;
+namespace AgendaBot.Discord;
 
 public sealed class BotOptions
 {

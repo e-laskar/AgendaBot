@@ -1,12 +1,12 @@
 using System.Globalization;
 using AgendaBot.Application.UseCases;
-using AgendaBot.Configuration;
+using AgendaBot.Discord.Presentation;
 using AgendaBot.Domain;
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;
 
-namespace AgendaBot.Modules;
+namespace AgendaBot.Discord.Commands;
 
 [Group("agenda", "Gestion de l'agenda du serveur")]
 [CommandContextType(InteractionContextType.Guild)]
