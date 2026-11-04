@@ -13,6 +13,8 @@ internal sealed class SpyReminderNotifier : IReminderNotifier
 
     public void FailFor(int eventId) => _failingEventIds.Add(eventId);
 
+    public void Recover() => _failingEventIds.Clear();
+
     public Task NotifyAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {
         if (_failingEventIds.Contains(evt.Id))
