@@ -16,6 +16,6 @@ builder.Services
 var host = builder.Build();
 
 host.Services.FailFastOnInvalidBotOptions();
-await host.Services.EnsureAgendaDatabaseCreatedAsync();
+await host.Services.MigrateAgendaDatabaseAsync();
 
 await host.RunAsync();

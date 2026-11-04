@@ -14,10 +14,10 @@ public static class PersistenceSetup
         return services;
     }
 
-    public static async Task EnsureAgendaDatabaseCreatedAsync(this IServiceProvider services)
+    public static async Task MigrateAgendaDatabaseAsync(this IServiceProvider services)
     {
         var dbFactory = services.GetRequiredService<IDbContextFactory<AgendaDbContext>>();
         await using var db = await dbFactory.CreateDbContextAsync();
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
     }
 }

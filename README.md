@@ -91,7 +91,7 @@ docker compose up -d --build
 docker compose logs -f agendabot
 ```
 
-Le schéma est créé automatiquement au premier démarrage. Les variables `POSTGRES_DB`, `POSTGRES_USER`
+Les migrations EF Core sont appliquées automatiquement au démarrage du bot. Les variables `POSTGRES_DB`, `POSTGRES_USER`
 et `POSTGRES_PASSWORD` de `.env` servent à la fois au service `db` et à la chaîne de connexion du bot.
 Le fichier `.env` n'est pas copié dans l'image (`.dockerignore`) : il est injecté à l'exécution.
 
@@ -106,6 +106,20 @@ docker run -d --name agenda-db -p 5432:5432 -e POSTGRES_DB=agenda -e POSTGRES_US
 ```
 
 La chaîne de connexion correspondante est déjà dans `.env.example`.
+
+### Migrations
+
+Le schéma est géré par des migrations EF Core (`src/AgendaBot.Persistence/Migrations`), appliquées au démarrage.
+Après une modification de `EventRecord` ou `AgendaDbContext` :
+
+```bash
+dotnet tool restore
+```
+```bash
+dotnet ef migrations add <NomDeLaMigration> --project src/AgendaBot.Persistence
+```
+
+Le test `MigrationsTests` échoue tant que la migration n'a pas été générée.
 
 ## Structure
 

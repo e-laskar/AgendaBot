@@ -17,7 +17,7 @@ public sealed class PostgresEventRepositoryContractTests(PostgresContainer postg
             .BuildServiceProvider();
         _providers.Add(services);
 
-        await services.EnsureAgendaDatabaseCreatedAsync();
+        await services.MigrateAgendaDatabaseAsync();
         return services.GetRequiredService<IEventRepository>();
     }
 
