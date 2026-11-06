@@ -67,6 +67,7 @@ Pour chaque nouvelle fonctionnalité, pose-toi explicitement la question de ces 
 - Nouvelle fonctionnalité ou changement transverse : propose d'abord un plan (couches touchées, ports, tests, cas d'échec) et attends sa validation.
 - Écris les tests avant l'implémentation, en commençant par le cas d'usage.
 - Avant chaque commit : build Release, puis tests unitaires et tests d'architecture au vert. Lance les tests de composant si un adaptateur a changé.
+- Le hook Stop (`.claude/hooks/VerifyBeforeStop.cs`) relance build et tests à chaque fin de tâche si `src/` ou `tests/` ont changé, et bloque tant que c'est rouge. Corrige la cause, ne le contourne pas.
 - Modification de `EventRecord` ou `AgendaDbContext` : génère la migration (`MigrationsTests` échoue sinon).
 - Nouvelle option de configuration : valide-la au démarrage et documente-la dans `README.md` et `.env.example`.
 - Un commit par idée. Message en français, préfixé par la couche (`Domain :`, `Application :`, `Persistence :`, `Discord :`, `Host :`, `Tests :`, `CI :`), titre qui dit le résultat. Corps qui explique le problème, puis une liste des changements.

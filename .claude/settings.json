@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dotnet",
+            "args": ["run", "--file", ".claude/hooks/VerifyBeforeStop.cs"],
+            "timeout": 600,
+            "statusMessage": "Build Release et tests avant de terminer…"
+          }
+        ]
+      }
+    ]
+  }
+}
