@@ -29,6 +29,7 @@ internal static class AgendaBotSetup
         services.AddSingleton<AddEvent>();
         services.AddSingleton<ListUpcomingEvents>();
         services.AddSingleton<GetEvent>();
+        services.AddSingleton<EditEvent>();
         services.AddSingleton<DeleteEvent>();
         services.AddSingleton<SendDueReminders>();
         return services;

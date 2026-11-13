@@ -17,6 +17,9 @@ public static class DomainErrors
     public static readonly Error DayInPast =
         new("day_in_past", "Ce jour est déjà passé.");
 
+    public static readonly Error EventAlreadyPast =
+        new("event_already_past", "Cet événement est déjà passé : il ne peut plus être modifié.");
+
     public static readonly Error InvalidDuration =
         new("invalid_duration", "La durée doit être d'au moins une minute.");
 }

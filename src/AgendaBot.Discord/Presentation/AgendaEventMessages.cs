@@ -18,6 +18,9 @@ internal static class AgendaEventMessages
             : $"⏰ Rappel : **{evt.Title}** commence {DiscordTimestamps.RelativeToViewer(evt.StartsAt)} " +
               $"({DiscordTimestamps.TimeInViewerTimeZone(evt.StartsAt)}).");
 
+    public static OutgoingMessage Edited(AgendaEvent evt) =>
+        OutgoingMessage.PingingNobody($"✏️ Événement #{evt.Id} « {evt.Title} » modifié.");
+
     public static OutgoingMessage Deleted(AgendaEvent evt) =>
         OutgoingMessage.PingingNobody($"🗑️ Événement #{evt.Id} « {evt.Title} » supprimé.");
 

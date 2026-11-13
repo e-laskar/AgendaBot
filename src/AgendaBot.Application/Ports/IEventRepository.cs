@@ -21,5 +21,7 @@ public interface IEventRepository
 
     Task ReleaseReminderClaimAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
 
+    Task<bool> UpdateAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
+
     Task DeleteAsync(AgendaEvent evt, CancellationToken cancellationToken = default);
 }

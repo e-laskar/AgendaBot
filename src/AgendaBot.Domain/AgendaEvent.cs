@@ -73,6 +73,42 @@ public sealed class AgendaEvent
         DateTimeOffset startsAt, TimeSpan? duration, bool isAllDay, bool reminderSent) =>
         new(id, guildId, channelId, createdBy, title, description, startsAt, duration, isAllDay, reminderSent);
 
+    public Result<AgendaEvent> Describe(EventTitle title, EventDescription? description, DateTimeOffset now)
+    {
+        if (!IsUpcomingAt(now))
+            return DomainErrors.EventAlreadyPast;
+
+        return new AgendaEvent(
+            Id, GuildId, ChannelId, CreatedBy, title, description,
+            StartsAt, Duration, IsAllDay, ReminderSent);
+    }
+
+    public Result<AgendaEvent> Reschedule(DateTimeOffset startsAt, TimeSpan? duration, DateTimeOffset now)
+    {
+        if (!IsUpcomingAt(now))
+            return DomainErrors.EventAlreadyPast;
+
+        var rescheduled = Create(GuildId, ChannelId, CreatedBy, Title, Description, startsAt, duration, now);
+        return rescheduled.IsSuccess ? KeepingIdentityAndReminderOf(rescheduled.Value) : rescheduled;
+    }
+
+    public Result<AgendaEvent> RescheduleAllDay(DateTimeOffset dayStartsAt, DateTimeOffset dayEndsAt, DateTimeOffset now)
+    {
+        if (!IsUpcomingAt(now))
+            return DomainErrors.EventAlreadyPast;
+
+        var rescheduled = CreateAllDay(GuildId, ChannelId, CreatedBy, Title, Description, dayStartsAt, dayEndsAt, now);
+        return rescheduled.IsSuccess ? KeepingIdentityAndReminderOf(rescheduled.Value) : rescheduled;
+    }
+
+    private AgendaEvent KeepingIdentityAndReminderOf(AgendaEvent rescheduled)
+    {
+        var reminderStillValid = rescheduled.StartsAt == StartsAt && ReminderSent;
+        return new AgendaEvent(
+            Id, GuildId, ChannelId, CreatedBy, Title, Description,
+            rescheduled.StartsAt, rescheduled.Duration, rescheduled.IsAllDay, reminderStillValid);
+    }
+
     public bool IsUpcomingAt(DateTimeOffset now) =>
         IsAllDay ? EndOfDay > now : StartsAt >= now;
 

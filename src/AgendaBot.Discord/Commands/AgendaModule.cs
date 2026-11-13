@@ -12,10 +12,14 @@ public sealed class AgendaModule(
     AddEvent addEvent,
     ListUpcomingEvents listUpcomingEvents,
     GetEvent getEvent,
+    EditEvent editEvent,
     DeleteEvent deleteEvent,
     UserDateParser userDateParser) : InteractionModuleBase<SocketInteractionContext>
 {
     private GuildId CurrentGuild => new(Context.Guild.Id);
+
+    private bool CurrentUserCanManageEvents =>
+        Context.User is IGuildUser { GuildPermissions.ManageEvents: true };
 
     [SlashCommand("ajouter", "Ajoute un événement à l'agenda")]
     public async Task AddAsync(
@@ -78,6 +82,43 @@ public sealed class AgendaModule(
         }
 
         await CompletePubliclyAsync(embed: AgendaEventEmbeds.Details(result.Value));
+    }
+
+    [SlashCommand("modifier", "Modifie un événement (seuls les champs indiqués changent)")]
+    public async Task EditAsync(
+        [Summary("id", "Identifiant de l'événement")] int id,
+        [Summary("titre", "Nouveau titre"), MaxLength(EventTitle.MaxLength)] string? title = null,
+        [Summary("date", "jj/mm/aaaa hh:mm, ou jj/mm/aaaa pour toute la journée")] string? date = null,
+        [Summary("description", "Nouvelle description"), MaxLength(EventDescription.MaxLength)] string? description = null,
+        [Summary("duree", "Nouvelle durée en minutes"), MinValue(1)] int? durationMinutes = null)
+    {
+        EventDate? eventDate = null;
+        if (date is not null && !userDateParser.TryParse(date, out eventDate))
+        {
+            await RespondAsync(AgendaEventMessages.InvalidDate, ephemeral: true);
+            return;
+        }
+
+        await DeferAsync();
+        var result = await editEvent.HandleAsync(new EditEventCommand(
+            CurrentGuild,
+            id,
+            new UserId(Context.User.Id),
+            CurrentUserCanManageEvents,
+            title,
+            description,
+            eventDate,
+            durationMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : null));
+
+        if (!result.IsSuccess)
+        {
+            await CompleteWithErrorAsync(result.Error);
+            return;
+        }
+
+        await CompletePubliclyAsync(
+            AgendaEventMessages.Edited(result.Value),
+            AgendaEventEmbeds.Details(result.Value));
     }
 
     [SlashCommand("supprimer", "Supprime un événement")]

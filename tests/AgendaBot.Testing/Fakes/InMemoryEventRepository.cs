@@ -8,6 +8,7 @@ public sealed class InMemoryEventRepository : IEventRepository
     private readonly Dictionary<int, AgendaEvent> _events = [];
     private readonly HashSet<int> _claimedByAnotherInstanceIds = [];
     private readonly HashSet<int> _failingClaimIds = [];
+    private readonly HashSet<int> _deletedBeforeUpdateIds = [];
     private int _nextId = 1;
 
     public IReadOnlyCollection<AgendaEvent> All => _events.Values.Select(Copy).ToList();
@@ -73,6 +74,20 @@ public sealed class InMemoryEventRepository : IEventRepository
 
     private void ClaimStored(int eventId) =>
         _events[eventId] = CopyWithReminderSent(_events[eventId], reminderSent: true);
+
+    public Task<bool> UpdateAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    {
+        if (_deletedBeforeUpdateIds.Remove(evt.Id))
+            _events.Remove(evt.Id);
+        if (!_events.TryGetValue(evt.Id, out var stored))
+            return Task.FromResult(false);
+
+        var reminderStillValid = stored.ReminderSent && stored.StartsAt == evt.StartsAt;
+        _events[evt.Id] = CopyWithReminderSent(evt, reminderStillValid);
+        return Task.FromResult(true);
+    }
+
+    public void AnotherInstanceDeletesBeforeUpdate(int eventId) => _deletedBeforeUpdateIds.Add(eventId);
 
     public Task DeleteAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {

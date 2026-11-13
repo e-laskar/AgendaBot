@@ -78,6 +78,23 @@ public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFacto
             .ExecuteUpdateAsync(s => s.SetProperty(e => e.ReminderSent, false), cancellationToken);
     }
 
+    public async Task<bool> UpdateAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var edited = evt.ToRecord();
+        var updatedRows = await db.Events
+            .Where(e => e.Id == evt.Id && e.GuildId == edited.GuildId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Title, edited.Title)
+                .SetProperty(e => e.Description, edited.Description)
+                .SetProperty(e => e.ReminderSent, e => e.ReminderSent && e.StartsAtUtc == edited.StartsAtUtc)
+                .SetProperty(e => e.StartsAtUtc, edited.StartsAtUtc)
+                .SetProperty(e => e.DurationMinutes, edited.DurationMinutes)
+                .SetProperty(e => e.IsAllDay, edited.IsAllDay),
+                cancellationToken);
+        return updatedRows == 1;
+    }
+
     public async Task DeleteAsync(AgendaEvent evt, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);

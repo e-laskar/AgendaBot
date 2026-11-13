@@ -249,6 +249,68 @@ public abstract class EventRepositoryContract
     }
 
     [Fact]
+    public async Task Updated_event_is_read_back_with_its_new_details_and_schedule()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var added = await repository.AddAsync(AnEvent().Titled("Avant").DescribedAs("Salle 2").Build());
+        var edited = added
+            .Describe(EventTitle.Create("Après").Value, description: null, T0.AddYears(-10)).Value
+            .RescheduleAllDay(T0.AddDays(1), T0.AddDays(2), T0.AddYears(-10)).Value;
+
+        (await repository.UpdateAsync(edited)).ShouldBeTrue();
+
+        ShouldBeSameEvent(await repository.GetAsync(Guild, added.Id), edited, added.Id);
+    }
+
+    [Fact]
+    public async Task Updating_changes_only_the_given_event()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var edited = await repository.AddAsync(AnEvent().Titled("Avant").Build());
+        var other = await repository.AddAsync(AnEvent().Titled("Autre").Build());
+
+        await repository.UpdateAsync(edited.Describe(EventTitle.Create("Après").Value, null, T0.AddYears(-10)).Value);
+
+        (await repository.GetAsync(Guild, other.Id))!.Title.Value.ShouldBe("Autre");
+    }
+
+    [Fact]
+    public async Task Updating_a_deleted_event_reports_it_missing()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var added = await repository.AddAsync(AnEvent().Build());
+        await repository.DeleteAsync(added);
+
+        (await repository.UpdateAsync(added)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Updating_without_moving_the_start_keeps_a_reminder_claimed_meanwhile()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var readBeforeClaim = await repository.AddAsync(AnEvent().Build());
+        await repository.TryClaimReminderAsync(readBeforeClaim);
+
+        await repository.UpdateAsync(
+            readBeforeClaim.Describe(EventTitle.Create("Après").Value, null, T0.AddYears(-10)).Value);
+
+        (await repository.GetAsync(Guild, readBeforeClaim.Id))!.ReminderSent.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Updating_with_another_start_makes_a_sent_reminder_due_again()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var added = await repository.AddAsync(AnEvent().StartingAt(T0.AddMinutes(5)).Build());
+        await repository.TryClaimReminderAsync(added);
+
+        await repository.UpdateAsync(added.Reschedule(T0.AddMinutes(10), null, T0.AddYears(-10)).Value);
+
+        (await repository.GetWithoutReminderStartingBetweenAsync(T0, T0.AddMinutes(15)))
+            .ShouldHaveSingleItem().Id.ShouldBe(added.Id);
+    }
+
+    [Fact]
     public async Task Counts_upcoming_events_created_by_the_user_in_the_guild()
     {
         var repository = await CreateEmptyRepositoryAsync();

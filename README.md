@@ -9,6 +9,7 @@ Bot Discord (C# / .NET 10, Discord.Net) pour gérer un agenda de serveur.
 | `/agenda ajouter titre date [description] [duree]` | Ajoute un événement (date au format `jj/mm/aaaa hh:mm`, ou `jj/mm/aaaa` pour toute la journée, sans durée) |
 | `/agenda lister [nombre]` | Liste les prochains événements, dont ceux sur toute la journée en cours |
 | `/agenda voir id` | Détail d'un événement |
+| `/agenda modifier id [titre] [date] [description] [duree]` | Modifie un événement à venir : seuls les champs indiqués changent (créateur ou permission « Gérer les événements ») |
 | `/agenda supprimer id` | Supprime un événement (permission « Gérer les événements ») |
 
 Un rappel est posté dans le salon d'origine `ReminderMinutesBefore` minutes avant chaque événement. Pour un événement

@@ -52,6 +52,22 @@ public class AgendaEventMessagesTests
     }
 
     [Fact]
+    public void Edit_confirmation_gives_id_and_new_title()
+    {
+        var evt = new AnAgendaEvent().Titled("Réunion").BuildPersisted(7);
+
+        AgendaEventMessages.Edited(evt).Text.ShouldBe("✏️ Événement #7 « Réunion » modifié.");
+    }
+
+    [Fact]
+    public void Edit_confirmation_pings_nobody_even_when_the_title_contains_mentions()
+    {
+        var evt = new AnAgendaEvent().Titled(TitleTryingToPingEveryone).BuildPersisted(7);
+
+        AgendaEventMessages.Edited(evt).ShouldPingNobody();
+    }
+
+    [Fact]
     public void Error_shows_the_message_meant_for_the_user()
     {
         AgendaEventMessages.Error(DomainErrors.TitleRequired).ShouldBe("❌ Le titre est obligatoire.");
