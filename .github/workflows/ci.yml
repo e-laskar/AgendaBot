@@ -68,12 +68,35 @@ jobs:
 
   docker-image:
     name: Image Docker
+    needs: build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/agendabot
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
     steps:
       - name: Récupération du code
         uses: actions/checkout@v7
 
       - name: Construction de l'image
-        run: docker build --tag agendabot:ci .
+        run: >-
+          docker build
+          --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          --label org.opencontainers.image.revision=${{ github.sha }}
+          --tag "${IMAGE,,}:latest"
+          --tag "${IMAGE,,}:sha-${GITHUB_SHA::7}"
+          .
+
+      - name: Connexion au registre GitHub (ghcr.io)
+        if: env.PUBLISH == 'true'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Publication de l'image (main uniquement)
+        if: env.PUBLISH == 'true'
+        run: |
+          docker push "${IMAGE,,}:sha-${GITHUB_SHA::7}"
+          docker push "${IMAGE,,}:latest"
