@@ -60,7 +60,8 @@ donc comme la vraie base.
   de composant. Docker est disponible sur les runners GitHub : le contrat du repository y tourne sur un vrai
   PostgreSQL. Toutes les suites s'exécutent même si l'une échoue ; les rapports TRX sont publiés en artefact
   `rapports-de-tests`.
-- **Image Docker** : construction de l'image pour vérifier le `Dockerfile` (sans publication).
+- **Image Docker** : une fois les tests au vert, construction de l'image pour vérifier le `Dockerfile`. Sur un push
+  sur `main`, l'image est publiée sur `ghcr.io/e-laskar/agendabot` (voir « Mise à jour automatique depuis la CI »).
 
 ## Configuration
 
@@ -117,6 +118,45 @@ et `POSTGRES_PASSWORD` de `.env` servent à la fois au service `db` et à la cha
 Le fichier `.env` n'est pas copié dans l'image (`.dockerignore`) : il est injecté à l'exécution.
 
 Accès à la base : `docker compose exec db psql -U agenda agenda`.
+
+### Mise à jour automatique depuis la CI
+
+À chaque push sur `main`, une fois les tests au vert, la CI publie l'image du bot sur le registre GitHub :
+`ghcr.io/e-laskar/agendabot:latest` et `ghcr.io/e-laskar/agendabot:sha-<commit>`. La machine qui héberge le bot
+récupère elle-même les nouvelles versions : rien n'a besoin d'être exposé sur Internet.
+
+Mise en place, une fois, sur la machine (Linux ou WSL avec Docker et Compose v2) :
+
+```bash
+git clone https://github.com/e-laskar/AgendaBot.git ~/agendabot && cd ~/agendabot
+```
+```bash
+cp .env.example .env        # renseigner Discord__Token et POSTGRES_PASSWORD
+```
+```bash
+./deploy/update.sh
+```
+
+Puis planifier la vérification toutes les 5 minutes (`crontab -e`) :
+
+```
+*/5 * * * * $HOME/agendabot/deploy/update.sh >> $HOME/agendabot/update.log 2>&1
+```
+
+`deploy/update.sh` récupère `docker-compose.yaml` à jour (`git pull`), télécharge la dernière image, redémarre le
+bot seulement si elle a changé, puis supprime les anciennes images. Les mises à jour sont journalisées dans
+`update.log`.
+
+- **Clone dédié** : utiliser ce dossier uniquement pour l'exécution. Une modification locale y bloque le `git pull`.
+- **Sous WSL** : cron n'est lancé qu'avec systemd (`[boot] systemd=true` dans `/etc/wsl.conf`, puis
+  `sudo systemctl enable --now cron`). Le bot ne tourne que tant que WSL est démarré.
+- **Image privée** : si `docker compose pull` répond `denied` ou `unauthorized`, rendre le package public
+  (GitHub → Packages → agendabot → Package settings → Change visibility) ou se connecter une fois avec
+  `docker login ghcr.io` et un token GitHub ayant le droit `read:packages`.
+- **Retour arrière** : `AGENDABOT_TAG=sha-<commit>` dans `.env` fige une version, puis `./deploy/update.sh`.
+  Retirer la ligne pour revenir à `latest`.
+- **Construction locale** : `docker compose up -d --build` construit l'image depuis les sources au lieu de la
+  télécharger ; la prochaine exécution de `deploy/update.sh` la remplace par celle de la CI.
 
 ### Base de données en dev local
 

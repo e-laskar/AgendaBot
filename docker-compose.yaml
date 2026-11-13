@@ -19,8 +19,11 @@ services:
     #   - "5432:5432"
 
   agendabot:
+    # Image publiée par la CI à chaque push sur main (deploy/update.sh la met à jour).
+    # AGENDABOT_TAG=sha-xxxxxxx dans .env fige une version (retour arrière).
+    # "docker compose up -d --build" construit l'image localement à la place.
+    image: ghcr.io/e-laskar/agendabot:${AGENDABOT_TAG:-latest}
     build: .
-    image: agendabot
     restart: unless-stopped
     depends_on:
       db:
