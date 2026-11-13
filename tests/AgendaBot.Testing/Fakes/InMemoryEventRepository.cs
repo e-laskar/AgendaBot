@@ -34,13 +34,13 @@ public sealed class InMemoryEventRepository : IEventRepository
     public Task<IReadOnlyList<AgendaEvent>> GetUpcomingByStartDateAsync(
         GuildId guildId, DateTimeOffset from, int max, CancellationToken cancellationToken = default) =>
         Result(_events.Values
-            .Where(e => e.GuildId == guildId && e.StartsAt >= from)
+            .Where(e => e.GuildId == guildId && e.IsUpcomingAt(from))
             .OrderBy(e => e.StartsAt)
             .Take(max));
 
     public Task<int> CountUpcomingCreatedByAsync(
         GuildId guildId, UserId creator, DateTimeOffset from, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_events.Values.Count(e => e.GuildId == guildId && e.CreatedBy == creator && e.StartsAt >= from));
+        Task.FromResult(_events.Values.Count(e => e.GuildId == guildId && e.CreatedBy == creator && e.IsUpcomingAt(from)));
 
     public Task<IReadOnlyList<AgendaEvent>> GetWithoutReminderStartingBetweenAsync(
         DateTimeOffset after, DateTimeOffset until, CancellationToken cancellationToken = default) =>
@@ -88,10 +88,10 @@ public sealed class InMemoryEventRepository : IEventRepository
     private static AgendaEvent CopyWithId(AgendaEvent evt, int id) =>
         AgendaEvent.RestoreFromPersistence(
             id, evt.GuildId, evt.ChannelId, evt.CreatedBy, evt.Title, evt.Description,
-            evt.StartsAt, evt.Duration, evt.ReminderSent);
+            evt.StartsAt, evt.Duration, evt.IsAllDay, evt.ReminderSent);
 
     private static AgendaEvent CopyWithReminderSent(AgendaEvent evt, bool reminderSent) =>
         AgendaEvent.RestoreFromPersistence(
             evt.Id, evt.GuildId, evt.ChannelId, evt.CreatedBy, evt.Title, evt.Description,
-            evt.StartsAt, evt.Duration, reminderSent);
+            evt.StartsAt, evt.Duration, evt.IsAllDay, reminderSent);
 }

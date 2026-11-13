@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AgendaBot.Application.Ports;
 using AgendaBot.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +30,8 @@ public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFacto
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var fromUtc = from.UtcDateTime;
         var records = await db.Events.AsNoTracking()
-            .Where(e => e.GuildId == guildId.Value && e.StartsAtUtc >= fromUtc)
+            .Where(e => e.GuildId == guildId.Value)
+            .Where(IsUpcomingAt(fromUtc))
             .OrderBy(e => e.StartsAtUtc)
             .Take(max)
             .ToListAsync(cancellationToken);
@@ -41,9 +43,10 @@ public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFacto
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var fromUtc = from.UtcDateTime;
-        return await db.Events.CountAsync(
-            e => e.GuildId == guildId.Value && e.CreatedByUserId == creator.Value && e.StartsAtUtc >= fromUtc,
-            cancellationToken);
+        return await db.Events
+            .Where(e => e.GuildId == guildId.Value && e.CreatedByUserId == creator.Value)
+            .Where(IsUpcomingAt(fromUtc))
+            .CountAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<AgendaEvent>> GetWithoutReminderStartingBetweenAsync(
@@ -82,4 +85,8 @@ public sealed class EfEventRepository(IDbContextFactory<AgendaDbContext> dbFacto
             .Where(e => e.Id == evt.Id)
             .ExecuteDeleteAsync(cancellationToken);
     }
+
+    private static Expression<Func<EventRecord, bool>> IsUpcomingAt(DateTime fromUtc) =>
+        e => e.StartsAtUtc >= fromUtc
+            || (e.IsAllDay && e.StartsAtUtc.AddMinutes(e.DurationMinutes!.Value) > fromUtc);
 }

@@ -13,6 +13,7 @@ internal static class EventRecordMapping
         Description = evt.Description?.Value,
         StartsAtUtc = evt.StartsAt.UtcDateTime,
         DurationMinutes = evt.Duration is { } duration ? (int)duration.TotalMinutes : null,
+        IsAllDay = evt.IsAllDay,
         ReminderSent = evt.ReminderSent
     };
 
@@ -26,5 +27,6 @@ internal static class EventRecordMapping
             EventDescription.CreateOptional(record.Description).Value,
             new DateTimeOffset(DateTime.SpecifyKind(record.StartsAtUtc, DateTimeKind.Utc)),
             record.DurationMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : null,
+            record.IsAllDay,
             record.ReminderSent);
 }

@@ -41,6 +41,20 @@ public class ListUpcomingEventsTests
     }
 
     [Fact]
+    public async Task Includes_all_day_events_of_the_current_day_first()
+    {
+        var todayStartsAt = Now.AddHours(-13);
+        _repository.Seed(
+            new AnAgendaEvent().Titled("Réunion").StartingAt(Now.AddMinutes(1)).BuildPersisted(1),
+            new AnAgendaEvent().Titled("Journée portes ouvertes").OnWholeDay(todayStartsAt, todayStartsAt.AddDays(1)).BuildPersisted(2),
+            new AnAgendaEvent().Titled("Hier").OnWholeDay(todayStartsAt.AddDays(-1), todayStartsAt).BuildPersisted(3));
+
+        var events = await _listUpcoming.HandleAsync(Guild, max: 10);
+
+        events.Select(e => e.Title.Value).ShouldBe(["Journée portes ouvertes", "Réunion"]);
+    }
+
+    [Fact]
     public async Task Excludes_events_of_other_guilds()
     {
         _repository.Seed(

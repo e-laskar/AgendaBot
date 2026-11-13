@@ -14,6 +14,7 @@ public sealed class AnAgendaEvent
     private string? _description;
     private DateTimeOffset _startsAt = DefaultNow.AddDays(1);
     private TimeSpan? _duration;
+    private bool _isAllDay;
     private DateTimeOffset _now = DefaultNow;
 
     public AnAgendaEvent InGuild(GuildId guildId) { _guildId = guildId; return this; }
@@ -23,10 +24,23 @@ public sealed class AnAgendaEvent
     public AnAgendaEvent DescribedAs(string? description) { _description = description; return this; }
     public AnAgendaEvent StartingAt(DateTimeOffset startsAt) { _startsAt = startsAt; return this; }
     public AnAgendaEvent Lasting(TimeSpan? duration) { _duration = duration; return this; }
+    public AnAgendaEvent OnWholeDay(DateTimeOffset dayStartsAt, DateTimeOffset dayEndsAt)
+    {
+        _startsAt = dayStartsAt;
+        _duration = dayEndsAt - dayStartsAt;
+        _isAllDay = true;
+        return this;
+    }
+
     public AnAgendaEvent CreatedAt(DateTimeOffset now) { _now = now; return this; }
 
-    public Result<AgendaEvent> TryBuild() =>
-        AgendaEvent.Create(
+    public Result<AgendaEvent> TryBuild() => _isAllDay
+        ? AgendaEvent.CreateAllDay(
+            _guildId, _channelId, _createdBy,
+            EventTitle.Create(_title).Value,
+            EventDescription.CreateOptional(_description).Value,
+            _startsAt, _startsAt + _duration!.Value, _now)
+        : AgendaEvent.Create(
             _guildId, _channelId, _createdBy,
             EventTitle.Create(_title).Value,
             EventDescription.CreateOptional(_description).Value,
@@ -39,5 +53,5 @@ public sealed class AnAgendaEvent
             id, _guildId, _channelId, _createdBy,
             EventTitle.Create(_title).Value,
             EventDescription.CreateOptional(_description).Value,
-            _startsAt, _duration, reminderSent);
+            _startsAt, _duration, _isAllDay, reminderSent);
 }

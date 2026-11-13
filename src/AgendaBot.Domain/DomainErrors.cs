@@ -14,6 +14,9 @@ public static class DomainErrors
     public static readonly Error StartInPast =
         new("start_in_past", "La date doit être dans le futur.");
 
+    public static readonly Error DayInPast =
+        new("day_in_past", "Ce jour est déjà passé.");
+
     public static readonly Error InvalidDuration =
         new("invalid_duration", "La durée doit être d'au moins une minute.");
 }

@@ -10,12 +10,17 @@ internal static class AgendaEventEmbeds
         var embed = new EmbedBuilder()
             .WithTitle($"📌 {evt.Title}")
             .WithDescription(evt.Description?.Value ?? "_Pas de description_")
-            .WithColor(Color.Green)
-            .AddField("Début", $"{DiscordTimestamps.FullDateInViewerTimeZone(evt.StartsAt)}\n{DiscordTimestamps.RelativeToViewer(evt.StartsAt)}", inline: true)
-            .AddField("Créé par", MentionUtils.MentionUser(evt.CreatedBy.Value), inline: true)
+            .WithColor(Color.Green);
+
+        if (evt.IsAllDay)
+            embed.AddField("Date", $"{DiscordTimestamps.LongDateInViewerTimeZone(evt.StartsAt)}\nToute la journée", inline: true);
+        else
+            embed.AddField("Début", $"{DiscordTimestamps.FullDateInViewerTimeZone(evt.StartsAt)}\n{DiscordTimestamps.RelativeToViewer(evt.StartsAt)}", inline: true);
+
+        embed.AddField("Créé par", MentionUtils.MentionUser(evt.CreatedBy.Value), inline: true)
             .WithFooter($"ID : {evt.Id}");
 
-        if (evt.Duration is { } duration)
+        if (!evt.IsAllDay && evt.Duration is { } duration)
             embed.AddField("Durée", HoursAndMinutes(duration), inline: true);
 
         return embed.Build();
@@ -29,13 +34,15 @@ internal static class AgendaEventEmbeds
 
         foreach (var evt in events)
         {
-            embed.AddField(
-                $"#{evt.Id} · {evt.Title}",
-                $"{DiscordTimestamps.FullDateInViewerTimeZone(evt.StartsAt)} ({DiscordTimestamps.RelativeToViewer(evt.StartsAt)})");
+            embed.AddField($"#{evt.Id} · {evt.Title}", WhenInList(evt));
         }
 
         return embed.Build();
     }
+
+    private static string WhenInList(AgendaEvent evt) => evt.IsAllDay
+        ? $"{DiscordTimestamps.LongDateInViewerTimeZone(evt.StartsAt)} (toute la journée)"
+        : $"{DiscordTimestamps.FullDateInViewerTimeZone(evt.StartsAt)} ({DiscordTimestamps.RelativeToViewer(evt.StartsAt)})";
 
     private static string HoursAndMinutes(TimeSpan duration) =>
         $"{(int)duration.TotalHours}h{duration.Minutes:00}";

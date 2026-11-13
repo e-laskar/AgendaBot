@@ -49,6 +49,9 @@ namespace AgendaBot.Persistence.Migrations
                     b.Property<decimal>("GuildId")
                         .HasColumnType("numeric(20,0)");
 
+                    b.Property<bool>("IsAllDay")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("ReminderSent")
                         .HasColumnType("boolean");
 

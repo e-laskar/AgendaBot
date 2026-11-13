@@ -9,6 +9,8 @@ namespace AgendaBot.UnitTests.Application;
 public class AddEventTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset TodayStartsAt = new(2026, 11, 3, 23, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset TodayEndsAt = TodayStartsAt.AddDays(1);
     private const int MaxUpcomingEventsPerCreator = 2;
 
     private readonly InMemoryEventRepository _repository = new();
@@ -21,7 +23,10 @@ public class AddEventTests
     private static AddEventCommand ValidCommand() => new(
         new GuildId(1), new ChannelId(2), new UserId(3),
         Title: "Réunion", Description: "Salle 2",
-        StartsAt: Now.AddDays(1), Duration: TimeSpan.FromMinutes(30));
+        Date: new EventDate.AtTime(Now.AddDays(1)), Duration: TimeSpan.FromMinutes(30));
+
+    private static AddEventCommand AllDayCommand(DateTimeOffset dayStartsAt, DateTimeOffset dayEndsAt) =>
+        ValidCommand() with { Date = new EventDate.AllDay(dayStartsAt, dayEndsAt), Duration = null };
 
     [Fact]
     public async Task Stores_valid_event()
@@ -37,8 +42,9 @@ public class AddEventTests
             () => stored.CreatedBy.ShouldBe(command.CreatedBy),
             () => stored.Title.Value.ShouldBe("Réunion"),
             () => stored.Description!.Value.ShouldBe("Salle 2"),
-            () => stored.StartsAt.ShouldBe(command.StartsAt),
-            () => stored.Duration.ShouldBe(TimeSpan.FromMinutes(30)));
+            () => stored.StartsAt.ShouldBe(Now.AddDays(1)),
+            () => stored.Duration.ShouldBe(TimeSpan.FromMinutes(30)),
+            () => stored.IsAllDay.ShouldBeFalse());
     }
 
     [Fact]
@@ -73,7 +79,7 @@ public class AddEventTests
     [Fact]
     public async Task Rejects_event_starting_before_current_time()
     {
-        var command = ValidCommand() with { StartsAt = Now.AddMinutes(10) };
+        var command = ValidCommand() with { Date = new EventDate.AtTime(Now.AddMinutes(10)) };
         _time.Advance(TimeSpan.FromMinutes(11));
 
         var result = await _addEvent.HandleAsync(command);
@@ -106,7 +112,7 @@ public class AddEventTests
     [Fact]
     public async Task Quota_frees_up_once_the_creator_events_are_past()
     {
-        await AddEventsAsync(MaxUpcomingEventsPerCreator, ValidCommand() with { StartsAt = Now.AddMinutes(10) });
+        await AddEventsAsync(MaxUpcomingEventsPerCreator, ValidCommand() with { Date = new EventDate.AtTime(Now.AddMinutes(10)) });
         _time.Advance(TimeSpan.FromMinutes(11));
 
         var result = await _addEvent.HandleAsync(ValidCommand());
@@ -122,6 +128,56 @@ public class AddEventTests
         var result = await _addEvent.HandleAsync(ValidCommand() with { CreatedBy = new UserId(4) });
 
         result.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Stores_all_day_event_lasting_the_whole_day()
+    {
+        await _addEvent.HandleAsync(AllDayCommand(TodayStartsAt.AddDays(1), TodayEndsAt.AddDays(1)));
+
+        var stored = _repository.All.ShouldHaveSingleItem();
+        stored.ShouldSatisfyAllConditions(
+            () => stored.IsAllDay.ShouldBeTrue(),
+            () => stored.StartsAt.ShouldBe(TodayStartsAt.AddDays(1)),
+            () => stored.Duration.ShouldBe(TimeSpan.FromDays(1)));
+    }
+
+    [Fact]
+    public async Task Accepts_all_day_event_for_the_current_day()
+    {
+        var result = await _addEvent.HandleAsync(AllDayCommand(TodayStartsAt, TodayEndsAt));
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Rejects_all_day_event_for_a_day_already_over()
+    {
+        var result = await _addEvent.HandleAsync(AllDayCommand(TodayStartsAt.AddDays(-1), TodayStartsAt));
+
+        result.Error.ShouldBe(DomainErrors.DayInPast);
+        _repository.All.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Rejects_all_day_event_with_a_duration()
+    {
+        var command = AllDayCommand(TodayStartsAt.AddDays(1), TodayEndsAt.AddDays(1)) with { Duration = TimeSpan.FromMinutes(30) };
+
+        var result = await _addEvent.HandleAsync(command);
+
+        result.Error.ShouldBe(ApplicationErrors.DurationWithAllDayEvent);
+        _repository.All.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task All_day_events_of_the_current_day_count_in_the_quota()
+    {
+        await AddEventsAsync(MaxUpcomingEventsPerCreator, AllDayCommand(TodayStartsAt, TodayEndsAt));
+
+        var result = await _addEvent.HandleAsync(ValidCommand());
+
+        result.Error.ShouldBe(ApplicationErrors.TooManyUpcomingEvents(MaxUpcomingEventsPerCreator));
     }
 
     private async Task AddEventsAsync(int count, AddEventCommand command)

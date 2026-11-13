@@ -59,6 +59,18 @@ public abstract class EventRepositoryContract
     }
 
     [Fact]
+    public async Task All_day_event_is_read_back_identically()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var original = AnEvent().OnWholeDay(T0, T0.AddHours(23)).Build();
+
+        var added = await repository.AddAsync(original);
+        var readBack = await repository.GetAsync(Guild, added.Id);
+
+        ShouldBeSameEvent(readBack, original, added.Id);
+    }
+
+    [Fact]
     public async Task Unknown_event_is_not_found()
     {
         var repository = await CreateEmptyRepositoryAsync();
@@ -98,6 +110,20 @@ public abstract class EventRepositoryContract
         var upcoming = await repository.GetUpcomingByStartDateAsync(Guild, T0, max: 10);
 
         upcoming.ShouldHaveSingleItem().Title.Value.ShouldBe("Pile à l'heure");
+    }
+
+    [Fact]
+    public async Task Upcoming_events_include_all_day_events_until_their_day_is_over()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        await repository.AddAsync(AnEvent().Titled("Jour fini").OnWholeDay(T0.AddDays(-1), T0).Build());
+        await repository.AddAsync(AnEvent().Titled("Jour en cours").OnWholeDay(T0.AddHours(-1), T0.AddHours(23)).Build());
+        await repository.AddAsync(AnEvent().Titled("Commencé").StartingAt(T0.AddMinutes(-1)).Lasting(TimeSpan.FromHours(2)).Build());
+        await repository.AddAsync(AnEvent().Titled("À venir").StartingAt(T0.AddMinutes(1)).Build());
+
+        var upcoming = await repository.GetUpcomingByStartDateAsync(Guild, T0, max: 10);
+
+        upcoming.Select(e => e.Title.Value).ShouldBe(["Jour en cours", "À venir"]);
     }
 
     [Fact]
@@ -245,6 +271,17 @@ public abstract class EventRepositoryContract
         (await repository.CountUpcomingCreatedByAsync(Guild, creator, T0)).ShouldBe(0);
     }
 
+    [Fact]
+    public async Task Upcoming_events_count_includes_all_day_events_until_their_day_is_over()
+    {
+        var repository = await CreateEmptyRepositoryAsync();
+        var creator = new UserId(42);
+        await repository.AddAsync(AnEvent().CreatedBy(creator).OnWholeDay(T0.AddDays(-1), T0).Build());
+        await repository.AddAsync(AnEvent().CreatedBy(creator).OnWholeDay(T0.AddHours(-1), T0.AddHours(23)).Build());
+
+        (await repository.CountUpcomingCreatedByAsync(Guild, creator, T0)).ShouldBe(1);
+    }
+
     private static void ShouldBeSameEvent(AgendaEvent? actual, AgendaEvent expected, int expectedId)
     {
         actual.ShouldNotBeNull();
@@ -258,6 +295,7 @@ public abstract class EventRepositoryContract
             () => actual.StartsAt.ShouldBe(expected.StartsAt),
             () => actual.StartsAt.Offset.ShouldBe(TimeSpan.Zero),
             () => actual.Duration.ShouldBe(expected.Duration),
+            () => actual.IsAllDay.ShouldBe(expected.IsAllDay),
             () => actual.ReminderSent.ShouldBe(expected.ReminderSent));
     }
 }

@@ -13,6 +13,7 @@ public class EventRecord
 
     public DateTime StartsAtUtc { get; set; }
     public int? DurationMinutes { get; set; }
+    public bool IsAllDay { get; set; }
 
     public bool ReminderSent { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

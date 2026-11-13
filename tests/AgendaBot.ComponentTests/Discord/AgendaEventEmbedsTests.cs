@@ -35,6 +35,21 @@ public class AgendaEventEmbedsTests
     }
 
     [Fact]
+    public void Details_of_all_day_event_show_the_day_without_time_nor_duration()
+    {
+        var dayStartsAt = new DateTimeOffset(2026, 12, 23, 23, 0, 0, TimeSpan.Zero);
+        var evt = new AnAgendaEvent().OnWholeDay(dayStartsAt, dayStartsAt.AddDays(1)).BuildPersisted(7);
+        var unix = dayStartsAt.ToUnixTimeSeconds();
+
+        var embed = AgendaEventEmbeds.Details(evt);
+
+        embed.ShouldSatisfyAllConditions(
+            () => FieldValue(embed, "Date").ShouldBe($"<t:{unix}:D>\nToute la journée"),
+            () => embed.Fields.ShouldNotContain(f => f.Name == "Début"),
+            () => embed.Fields.ShouldNotContain(f => f.Name == "Durée"));
+    }
+
+    [Fact]
     public void Details_say_when_there_is_no_description()
     {
         var evt = new AnAgendaEvent().DescribedAs(null).BuildPersisted(7);
@@ -72,5 +87,17 @@ public class AgendaEventEmbedsTests
 
         embed.Fields.Select(f => f.Name).ShouldBe(["#1 · Réunion", "#2 · Apéro"]);
         embed.Fields[0].Value.ShouldBe($"<t:{unix}:F> (<t:{unix}:R>)");
+    }
+
+    [Fact]
+    public void Upcoming_list_shows_all_day_event_as_a_day_without_time()
+    {
+        var dayStartsAt = new DateTimeOffset(2026, 12, 23, 23, 0, 0, TimeSpan.Zero);
+        var evt = new AnAgendaEvent().OnWholeDay(dayStartsAt, dayStartsAt.AddDays(1)).BuildPersisted(1);
+        var unix = dayStartsAt.ToUnixTimeSeconds();
+
+        var embed = AgendaEventEmbeds.UpcomingList([evt]);
+
+        embed.Fields.ShouldHaveSingleItem().Value.ShouldBe($"<t:{unix}:D> (toute la journée)");
     }
 }

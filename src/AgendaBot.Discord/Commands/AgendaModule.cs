@@ -20,11 +20,11 @@ public sealed class AgendaModule(
     [SlashCommand("ajouter", "Ajoute un événement à l'agenda")]
     public async Task AddAsync(
         [Summary("titre", "Titre de l'événement"), MaxLength(EventTitle.MaxLength)] string title,
-        [Summary("date", "Date et heure, format jj/mm/aaaa hh:mm")] string date,
+        [Summary("date", "jj/mm/aaaa hh:mm, ou jj/mm/aaaa pour toute la journée")] string date,
         [Summary("description", "Description optionnelle"), MaxLength(EventDescription.MaxLength)] string? description = null,
         [Summary("duree", "Durée en minutes"), MinValue(1)] int? durationMinutes = null)
     {
-        if (!userDateParser.TryParse(date, out var startsAt))
+        if (!userDateParser.TryParse(date, out var eventDate))
         {
             await RespondAsync(AgendaEventMessages.InvalidDate, ephemeral: true);
             return;
@@ -37,7 +37,7 @@ public sealed class AgendaModule(
             new UserId(Context.User.Id),
             title,
             description,
-            startsAt,
+            eventDate,
             durationMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : null));
 
         if (!result.IsSuccess)

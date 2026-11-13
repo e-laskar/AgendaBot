@@ -13,7 +13,7 @@ public class AgendaEventRestoreTests
 
         var evt = AgendaEvent.RestoreFromPersistence(
             7, new GuildId(1), new ChannelId(2), new UserId(3),
-            title, description, pastStart, TimeSpan.FromMinutes(30), reminderSent: true);
+            title, description, pastStart, TimeSpan.FromMinutes(30), isAllDay: true, reminderSent: true);
 
         evt.ShouldSatisfyAllConditions(
             () => evt.Id.ShouldBe(7),
@@ -24,6 +24,7 @@ public class AgendaEventRestoreTests
             () => evt.Description.ShouldBe(description),
             () => evt.StartsAt.ShouldBe(pastStart),
             () => evt.Duration.ShouldBe(TimeSpan.FromMinutes(30)),
+            () => evt.IsAllDay.ShouldBeTrue(),
             () => evt.ReminderSent.ShouldBeTrue());
     }
 
@@ -34,7 +35,7 @@ public class AgendaEventRestoreTests
 
         var evt = AgendaEvent.RestoreFromPersistence(
             7, new GuildId(1), new ChannelId(2), new UserId(3),
-            EventTitle.Create("Réunion").Value, null, parisTime, null, reminderSent: false);
+            EventTitle.Create("Réunion").Value, null, parisTime, null, isAllDay: false, reminderSent: false);
 
         evt.StartsAt.Offset.ShouldBe(TimeSpan.Zero);
     }

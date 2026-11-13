@@ -18,6 +18,16 @@ public class AgendaEventMessagesTests
     }
 
     [Fact]
+    public void Reminder_of_all_day_event_gives_title_and_day_without_time()
+    {
+        var dayStartsAt = new DateTimeOffset(2026, 12, 23, 23, 0, 0, TimeSpan.Zero);
+        var evt = new AnAgendaEvent().Titled("Réveillon").OnWholeDay(dayStartsAt, dayStartsAt.AddDays(1)).BuildPersisted(7);
+        var unix = dayStartsAt.ToUnixTimeSeconds();
+
+        AgendaEventMessages.Reminder(evt).Text.ShouldBe($"⏰ Rappel : **Réveillon** a lieu toute la journée le <t:{unix}:D>.");
+    }
+
+    [Fact]
     public void Reminder_pings_nobody_even_when_the_title_contains_mentions()
     {
         var evt = new AnAgendaEvent().Titled(TitleTryingToPingEveryone).BuildPersisted(7);
@@ -48,8 +58,10 @@ public class AgendaEventMessagesTests
     }
 
     [Fact]
-    public void Invalid_date_explains_expected_format_with_an_example()
+    public void Invalid_date_explains_both_expected_formats_with_examples()
     {
-        AgendaEventMessages.InvalidDate.ShouldBe("❌ Date invalide. Format attendu : `dd/MM/yyyy HH:mm` (ex. `24/12/2026 20:00`).");
+        AgendaEventMessages.InvalidDate.ShouldBe(
+            "❌ Date invalide. Format attendu : `dd/MM/yyyy HH:mm` (ex. `24/12/2026 20:00`), " +
+            "ou `dd/MM/yyyy` pour toute la journée (ex. `24/12/2026`).");
     }
 }
