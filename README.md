@@ -96,7 +96,7 @@ quota d'événements invalide font échouer le lancement avec un message explici
 
 ## Déploiement Docker
 
-`compose.yaml` lance deux services :
+`docker-compose.yaml` lance deux services :
 
 - **`db`** : PostgreSQL 17 (volume `pg-data`, non exposé sur l'hôte, healthcheck `pg_isready`) ;
 - **`agendabot`** : le bot, démarré une fois la base prête.
@@ -106,6 +106,9 @@ cp .env.example .env        # renseigner Discord__Token et POSTGRES_PASSWORD
 docker compose up -d --build
 docker compose logs -f agendabot
 ```
+
+Le fichier nécessite Compose v2 (`docker compose`, sans tiret). L'ancien `docker-compose` v1 le refuse avec
+« Unsupported config option for services » ; `docker compose version` indique la version installée.
 
 Les migrations EF Core sont appliquées automatiquement au démarrage du bot. Les variables `POSTGRES_DB`, `POSTGRES_USER`
 et `POSTGRES_PASSWORD` de `.env` servent à la fois au service `db` et à la chaîne de connexion du bot.

@@ -9,5 +9,5 @@ obj/
 .env
 appsettings.*.local.json
 Dockerfile
-compose.yaml
+docker-compose.yaml
 .artifacts/
