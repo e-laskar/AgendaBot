@@ -64,7 +64,7 @@ Pour chaque nouvelle fonctionnalité, pose-toi explicitement la question de ces 
 
 ## Méthode de travail
 
-- Nouvelle fonctionnalité ou changement transverse : propose d'abord un plan (couches touchées, ports, tests, cas d'échec) et attends sa validation.
+- Nouvelle fonctionnalité ou changement transverse : propose d'abord un plan (couches touchées, ports, tests, cas d'échec) en mode plan, et attends sa validation. Le modèle du projet est `opusplan` : Opus planifie en mode plan, un modèle plus économe implémente une fois le plan validé.
 - Écris les tests avant l'implémentation, en commençant par le cas d'usage.
 - Avant chaque commit : build Release, puis tests unitaires et tests d'architecture au vert. Lance les tests de composant si un adaptateur a changé.
 - Le hook Stop (`.claude/hooks/VerifyBeforeStop.cs`) relance build et tests à chaque fin de tâche si `src/` ou `tests/` ont changé, et bloque tant que c'est rouge. Corrige la cause, ne le contourne pas.
